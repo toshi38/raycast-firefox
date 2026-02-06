@@ -65,25 +65,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COMM-01 | — | Pending |
-| COMM-02 | — | Pending |
-| COMM-03 | — | Pending |
-| COMM-04 | — | Pending |
-| TABS-01 | — | Pending |
-| TABS-02 | — | Pending |
-| TABS-03 | — | Pending |
-| TABS-04 | — | Pending |
-| ACTN-01 | — | Pending |
-| ACTN-02 | — | Pending |
-| ERRH-01 | — | Pending |
-| ERRH-02 | — | Pending |
-| ERRH-03 | — | Pending |
+| COMM-01 | Phase 1 | Pending |
+| COMM-02 | Phase 2 | Pending |
+| COMM-03 | Phase 2 | Pending |
+| COMM-04 | Phase 8 | Pending |
+| TABS-01 | Phase 3 | Pending |
+| TABS-02 | Phase 3 | Pending |
+| TABS-03 | Phase 5 | Pending |
+| TABS-04 | Phase 5 | Pending |
+| ACTN-01 | Phase 4 | Pending |
+| ACTN-02 | Phase 6 | Pending |
+| ERRH-01 | Phase 7 | Pending |
+| ERRH-02 | Phase 7 | Pending |
+| ERRH-03 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 (pending roadmap creation)
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-06 after initial definition*
+*Last updated: 2026-02-06 after roadmap creation*
