@@ -32,12 +32,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. WebExtension background script can enumerate all open tabs (titles, URLs, favicons, active state) via browser.tabs.query
   3. WebExtension listens for incoming native messages and responds with tab data as JSON
   4. WebExtension can receive a "switch tab" command and activate the specified tab via browser.tabs.update and browser.windows.update
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: WebExtension manifest and background script scaffold
-- [ ] 01-02: Tab query and native message response handler
-- [ ] 01-03: Tab action handlers (switch, close)
+- [ ] 01-01-PLAN.md -- Core extension: manifest, background script with all command handlers, icons
+- [ ] 01-02-PLAN.md -- Debug page, web-ext tooling, and Firefox load verification
 
 ### Phase 2: Native Messaging Bridge
 **Goal**: A Node.js Native Messaging Host that bridges Firefox's native messaging protocol to a localhost HTTP server
@@ -158,7 +157,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Firefox WebExtension | 0/3 | Not started | - |
+| 1. Firefox WebExtension | 0/2 | Planning complete | - |
 | 2. Native Messaging Bridge | 0/3 | Not started | - |
 | 3. Raycast Tab List | 0/3 | Not started | - |
 | 4. Tab Switching | 0/3 | Not started | - |
