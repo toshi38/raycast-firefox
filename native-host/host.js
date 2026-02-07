@@ -11,24 +11,18 @@ console.warn = (...args) => logger.warn({ console: true }, args.join(' '));
 
 const { createDecoder, encode } = require('./src/protocol');
 const { version } = require('./package.json');
+const lifecycle = require('./src/lifecycle');
+const bridge = require('./src/bridge');
+const { ensureServer } = require('./src/server');
 
-// -- Native connection state --
-
-let nativeConnected = true; // true until stdin ends
-
-/**
- * Returns whether the native messaging connection (stdin) is still open.
- */
-function isNativeConnected() {
-  return nativeConnected;
-}
+// -- Native messaging output --
 
 /**
  * Sends a message to the WebExtension via the native messaging protocol.
  * Writes a length-prefixed binary message to stdout.
  */
 function sendNativeMessage(msg) {
-  if (!nativeConnected) {
+  if (!bridge.isNativeConnected()) {
     logger.warn({ msg }, 'Cannot send native message: connection closed');
     return false;
   }
@@ -37,9 +31,22 @@ function sendNativeMessage(msg) {
   return true;
 }
 
-// -- Stdin (native messaging) setup --
+// -- Startup --
 
 logger.info({ version, pid: process.pid, logDir: getLogDir() }, 'Native messaging host starting');
+
+// Wire bridge to use our sendNativeMessage function
+bridge.setSendNativeMessage(sendNativeMessage);
+bridge.setNativeConnected(true);
+
+// -- Lazy HTTP server --
+// HTTP server does NOT start on host launch. It starts when the first native
+// message arrives from Firefox, confirming the WebExtension connection is live.
+let serverStarted = false;
+
+logger.info('Waiting for Firefox connection before starting HTTP server');
+
+// -- Stdin (native messaging) setup --
 
 // CRITICAL: Do NOT call process.stdin.setEncoding() -- must stay in raw Buffer mode
 const decoder = createDecoder(onMessage, logger);
@@ -47,13 +54,13 @@ const decoder = createDecoder(onMessage, logger);
 process.stdin.on('data', decoder);
 
 process.stdin.on('end', () => {
-  nativeConnected = false;
-  logger.info('Native messaging connection closed (stdin EOF)');
+  bridge.setNativeConnected(false);
+  logger.info('Firefox disconnected (stdin EOF)');
   // Do NOT exit -- host stays alive for HTTP requests
 });
 
 process.stdin.on('error', (err) => {
-  nativeConnected = false;
+  bridge.setNativeConnected(false);
   logger.error({ err: err.message }, 'Native messaging stdin error');
   // Do NOT exit -- host stays alive for HTTP requests
 });
@@ -62,22 +69,55 @@ process.stdin.on('error', (err) => {
 
 function onMessage(msg) {
   logger.info({ id: msg.id, command: msg.command || msg.type }, 'Received native message');
-  // Bridge module (Plan 02) will handle routing.
-  // For now, just log received messages.
+
+  // Lazy server start: triggered on first native message from Firefox
+  if (!serverStarted) {
+    serverStarted = true;
+    logger.info('First native message received, starting HTTP server');
+    ensureServer().catch((err) => {
+      logger.error({ err: err.message }, 'Failed to start HTTP server');
+    });
+  }
+
+  bridge.handleNativeResponse(msg);
 }
+
+// -- Lifecycle management --
+
+(async () => {
+  try {
+    await lifecycle.killOldProcess();
+  } catch (err) {
+    logger.error({ err: err.message }, 'Error killing old process');
+  }
+
+  lifecycle.writePidFile();
+
+  // Send version handshake to WebExtension
+  bridge.sendVersionHandshake();
+
+  logger.info('Host ready, waiting for native connection');
+})();
 
 // -- Signal handlers --
 
 process.on('SIGTERM', () => {
-  logger.info('Received SIGTERM');
-  // Lifecycle module (Plan 02) handles PID cleanup and graceful shutdown.
-  // For now, just log.
+  logger.info('Received SIGTERM, shutting down');
+  lifecycle.cleanupPidFile();
+  lifecycle.cleanupPortFile();
+  process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  logger.info('Received SIGINT');
-  // Lifecycle module (Plan 02) handles PID cleanup and graceful shutdown.
-  // For now, just log.
+  logger.info('Received SIGINT, shutting down');
+  lifecycle.cleanupPidFile();
+  lifecycle.cleanupPortFile();
+  process.exit(0);
+});
+
+process.on('exit', () => {
+  lifecycle.cleanupPidFile();
+  lifecycle.cleanupPortFile();
 });
 
 process.on('uncaughtException', (err) => {
@@ -89,8 +129,6 @@ process.on('unhandledRejection', (reason) => {
   logger.error({ reason: String(reason) }, 'Unhandled promise rejection');
 });
 
-logger.info('Host ready, waiting for native connection');
-
 // -- Exports for other modules --
 
-module.exports = { sendNativeMessage, isNativeConnected };
+module.exports = { sendNativeMessage };
