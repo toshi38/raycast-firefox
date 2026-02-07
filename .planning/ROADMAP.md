@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Core extension: manifest, background script with all command handlers, icons
+- [x] 01-01-PLAN.md -- Core extension: manifest, background script with all command handlers, icons
 - [ ] 01-02-PLAN.md -- Debug page, web-ext tooling, and Firefox load verification
 
 ### Phase 2: Native Messaging Bridge
@@ -157,7 +157,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Firefox WebExtension | 0/2 | Planning complete | - |
+| 1. Firefox WebExtension | 1/2 | In progress | - |
 | 2. Native Messaging Bridge | 0/3 | Not started | - |
 | 3. Raycast Tab List | 0/3 | Not started | - |
 | 4. Tab Switching | 0/3 | Not started | - |
@@ -168,4 +168,4 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-02-06*
+*Last updated: 2026-02-07*
