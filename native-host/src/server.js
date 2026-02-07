@@ -2,6 +2,7 @@
 
 const http = require('http');
 const { URL } = require('url');
+const { execFile } = require('child_process');
 const { logger } = require('./logger');
 const { sendRequest } = require('./bridge');
 const { writePortFile } = require('./lifecycle');
@@ -157,6 +158,14 @@ async function handleSwitchTab(req, res) {
       tabId: body.tabId,
       windowId: body.windowId,
     });
+
+    // Raise Firefox to foreground on macOS
+    if (process.platform === 'darwin') {
+      execFile('osascript', ['-e', 'tell application "Firefox" to activate'], (err) => {
+        if (err) logger.warn({ err: err.message }, 'Failed to activate Firefox via osascript');
+      });
+    }
+
     sendJSON(res, 200, {
       ok: true,
       data,
