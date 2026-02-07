@@ -1,7 +1,6 @@
 'use strict';
 
-const MAX_INBOUND_SIZE = 512 * 1024; // 512KB
-const MAX_OUTBOUND_SIZE = 1024 * 1024; // 1MB (Firefox's limit)
+const MAX_MESSAGE_SIZE = 1024 * 1024; // 1MB (Firefox's native messaging limit)
 
 /**
  * Creates a decoder for the native messaging length-prefixed binary protocol.
@@ -20,6 +19,7 @@ function createDecoder(onMessage, log) {
   const chunks = [];
   let bufferedLength = 0;
   let expectedLength = 0;
+  let skipCurrent = false;
 
   return function decode(chunk) {
     chunks.push(chunk);
@@ -33,21 +33,13 @@ function createDecoder(onMessage, log) {
 
         expectedLength = buf.readUInt32LE(0);
 
-        // Check inbound size limit
-        if (expectedLength > MAX_INBOUND_SIZE) {
+        // Check inbound size limit — mark for skip but let normal buffering
+        // consume the bytes so the decoder stays in sync.
+        if (expectedLength > MAX_MESSAGE_SIZE) {
           if (log) {
-            log.error({ size: expectedLength, limit: MAX_INBOUND_SIZE }, 'Inbound message exceeds 512KB limit, skipping');
+            log.error({ size: expectedLength, limit: MAX_MESSAGE_SIZE }, 'Inbound message exceeds 1MB limit, skipping');
           }
-          // Reset state -- skip this message
-          const remaining = buf.subarray(4 + expectedLength);
-          expectedLength = 0;
-          if (remaining.length > 0) {
-            chunks.push(remaining);
-            bufferedLength = remaining.length;
-          } else {
-            bufferedLength = 0;
-          }
-          continue;
+          skipCurrent = true;
         }
 
         const remaining = buf.subarray(4);
@@ -59,7 +51,7 @@ function createDecoder(onMessage, log) {
         }
       }
 
-      // Have full message body
+      // Have full message body (or enough bytes to skip an oversized one)
       if (expectedLength > 0 && bufferedLength >= expectedLength) {
         const buf = Buffer.concat(chunks);
         chunks.length = 0;
@@ -71,6 +63,11 @@ function createDecoder(onMessage, log) {
         bufferedLength = remaining.length;
         if (remaining.length > 0) {
           chunks.push(remaining);
+        }
+
+        if (skipCurrent) {
+          skipCurrent = false;
+          continue;
         }
 
         const message = JSON.parse(messageBytes.toString('utf-8'));
@@ -95,8 +92,8 @@ function encode(message) {
   const json = JSON.stringify(message);
   const body = Buffer.from(json, 'utf-8');
 
-  if (body.length > MAX_OUTBOUND_SIZE) {
-    throw new Error(`Outbound message too large: ${body.length} bytes (max ${MAX_OUTBOUND_SIZE})`);
+  if (body.length > MAX_MESSAGE_SIZE) {
+    throw new Error(`Outbound message too large: ${body.length} bytes (max ${MAX_MESSAGE_SIZE})`);
   }
 
   const header = Buffer.alloc(4);
