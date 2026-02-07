@@ -8,14 +8,14 @@
 ### Communication Layer
 
 - [x] **COMM-01**: Companion Firefox WebExtension that uses `browser.tabs` API to access tab data
-- [ ] **COMM-02**: Native Messaging Host that bridges Firefox WebExtension and Raycast extension via localhost HTTP
-- [ ] **COMM-03**: Native messaging protocol implementation (length-prefixed JSON over stdin/stdout)
+- [x] **COMM-02**: Native Messaging Host that bridges Firefox WebExtension and Raycast extension via localhost HTTP
+- [x] **COMM-03**: Native messaging protocol implementation (length-prefixed JSON over stdin/stdout)
 - [ ] **COMM-04**: Automated setup command to register native messaging host manifest with Firefox
 
 ### Tab Search
 
-- [ ] **TABS-01**: User can search open Firefox tabs by title and URL via fuzzy matching
-- [ ] **TABS-02**: Tab list displays URL as subtitle for each tab
+- [x] **TABS-01**: User can search open Firefox tabs by title and URL via fuzzy matching
+- [x] **TABS-02**: Tab list displays URL as subtitle for each tab
 - [ ] **TABS-03**: Active tab is visually indicated in the list
 - [ ] **TABS-04**: Tab list displays favicon for each tab
 
@@ -66,11 +66,11 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | COMM-01 | Phase 1 | Complete |
-| COMM-02 | Phase 2 | Pending |
-| COMM-03 | Phase 2 | Pending |
+| COMM-02 | Phase 2 | Complete |
+| COMM-03 | Phase 2 | Complete |
 | COMM-04 | Phase 8 | Pending |
-| TABS-01 | Phase 3 | Pending |
-| TABS-02 | Phase 3 | Pending |
+| TABS-01 | Phase 3 | Complete |
+| TABS-02 | Phase 3 | Complete |
 | TABS-03 | Phase 5 | Pending |
 | TABS-04 | Phase 5 | Pending |
 | ACTN-01 | Phase 4 | Pending |
@@ -86,4 +86,4 @@
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-07 after Phase 1 completion*
+*Last updated: 2026-02-07 after Phase 3 completion*

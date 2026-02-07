@@ -13,8 +13,8 @@ This roadmap delivers a Raycast extension for Firefox tab control, structured as
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Firefox WebExtension** - Companion extension that exposes tab data via the browser.tabs API
-- [ ] **Phase 2: Native Messaging Bridge** - Native Messaging Host bridging Firefox to localhost HTTP
-- [ ] **Phase 3: Raycast Tab List** - Raycast extension displaying open Firefox tabs with search
+- [x] **Phase 2: Native Messaging Bridge** - Native Messaging Host bridging Firefox to localhost HTTP
+- [x] **Phase 3: Raycast Tab List** - Raycast extension displaying open Firefox tabs with search
 - [ ] **Phase 4: Tab Switching** - User can select a tab in Raycast and Firefox brings it to front
 - [ ] **Phase 5: Tab List Polish** - Active tab indicator and favicons for visual completeness
 - [ ] **Phase 6: Tab Close Action** - Close a tab from Raycast without switching to it
@@ -51,9 +51,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Project scaffold, logging infrastructure, and native messaging binary protocol
-- [ ] 02-02-PLAN.md -- Process lifecycle, request-response bridge, HTTP server with endpoints, install script
-- [ ] 02-03-PLAN.md -- End-to-end integration verification (human checkpoint)
+- [x] 02-01-PLAN.md -- Project scaffold, logging infrastructure, and native messaging binary protocol
+- [x] 02-02-PLAN.md -- Process lifecycle, request-response bridge, HTTP server with endpoints, install script
+- [x] 02-03-PLAN.md -- End-to-end integration verification (human checkpoint)
 
 ### Phase 3: Raycast Tab List
 **Goal**: Users can invoke a Raycast command and see a searchable list of all open Firefox tabs
@@ -67,8 +67,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Raycast extension scaffold + Search Firefox Tabs command implementation
-- [ ] 03-02-PLAN.md -- End-to-end verification in Raycast (human checkpoint)
+- [x] 03-01-PLAN.md -- Raycast extension scaffold + Search Firefox Tabs command implementation
+- [x] 03-02-PLAN.md -- End-to-end verification in Raycast (human checkpoint)
 
 ### Phase 4: Tab Switching
 **Goal**: Users can select a tab in Raycast and Firefox instantly brings that tab to the front
@@ -157,8 +157,8 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 1. Firefox WebExtension | 2/2 | Complete | 2026-02-07 |
-| 2. Native Messaging Bridge | 0/3 | Not started | - |
-| 3. Raycast Tab List | 0/2 | Not started | - |
+| 2. Native Messaging Bridge | 3/3 | Complete | 2026-02-07 |
+| 3. Raycast Tab List | 2/2 | Complete | 2026-02-07 |
 | 4. Tab Switching | 0/3 | Not started | - |
 | 5. Tab List Polish | 0/3 | Not started | - |
 | 6. Tab Close Action | 0/3 | Not started | - |
@@ -167,4 +167,4 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-02-07*
+*Last updated: 2026-02-07 (Phase 3 complete)*
