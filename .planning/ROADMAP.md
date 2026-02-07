@@ -12,7 +12,7 @@ This roadmap delivers a Raycast extension for Firefox tab control, structured as
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Firefox WebExtension** - Companion extension that exposes tab data via the browser.tabs API
+- [x] **Phase 1: Firefox WebExtension** - Companion extension that exposes tab data via the browser.tabs API
 - [ ] **Phase 2: Native Messaging Bridge** - Native Messaging Host bridging Firefox to localhost HTTP
 - [ ] **Phase 3: Raycast Tab List** - Raycast extension displaying open Firefox tabs with search
 - [ ] **Phase 4: Tab Switching** - User can select a tab in Raycast and Firefox brings it to front
@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md -- Core extension: manifest, background script with all command handlers, icons
-- [ ] 01-02-PLAN.md -- Debug page, web-ext tooling, and Firefox load verification
+- [x] 01-02-PLAN.md -- Debug page, web-ext tooling, and Firefox load verification
 
 ### Phase 2: Native Messaging Bridge
 **Goal**: A Node.js Native Messaging Host that bridges Firefox's native messaging protocol to a localhost HTTP server
@@ -157,7 +157,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Firefox WebExtension | 1/2 | In progress | - |
+| 1. Firefox WebExtension | 2/2 | Complete | 2026-02-07 |
 | 2. Native Messaging Bridge | 0/3 | Not started | - |
 | 3. Raycast Tab List | 0/3 | Not started | - |
 | 4. Tab Switching | 0/3 | Not started | - |
