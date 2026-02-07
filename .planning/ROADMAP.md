@@ -48,12 +48,12 @@ Plans:
   3. HTTP GET to /tabs returns JSON array of all open Firefox tabs (fetched via native messaging from the WebExtension)
   4. HTTP POST to /switch with tabId/windowId triggers tab switch in Firefox via the WebExtension
   5. Full round-trip works: curl to localhost returns live tab data from Firefox
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Native messaging protocol (length-prefixed JSON stdin/stdout)
-- [ ] 02-02: Localhost HTTP server with /tabs and /switch endpoints
-- [ ] 02-03: End-to-end integration test (manual or scripted)
+- [ ] 02-01-PLAN.md -- Project scaffold, logging infrastructure, and native messaging binary protocol
+- [ ] 02-02-PLAN.md -- Process lifecycle, request-response bridge, HTTP server with endpoints, install script
+- [ ] 02-03-PLAN.md -- End-to-end integration verification (human checkpoint)
 
 ### Phase 3: Raycast Tab List
 **Goal**: Users can invoke a Raycast command and see a searchable list of all open Firefox tabs
