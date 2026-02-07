@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Raycast Firefox - Debug</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+    h2 {
+      font-size: 15px;
+      margin-bottom: 12px;
+      color: #a0a0c0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .section {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+    }
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-indicator.connected {
+      background: #4caf50;
+      box-shadow: 0 0 6px #4caf5088;
+    }
+    .status-indicator.disconnected {
+      background: #f44336;
+      box-shadow: 0 0 6px #f4433688;
+    }
+    .native-app-name {
+      color: #888;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    button {
+      background: #0f3460;
+      color: #e0e0e0;
+      border: 1px solid #1a4a7a;
+      border-radius: 4px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button:hover {
+      background: #1a4a7a;
+    }
+    button.active {
+      background: #4caf50;
+      border-color: #4caf50;
+      color: #fff;
+    }
+    .message-log {
+      max-height: 500px;
+      overflow-y: auto;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Menlo, monospace;
+      font-size: 12px;
+    }
+    .message-entry {
+      padding: 6px 8px;
+      border-bottom: 1px solid #1a1a2e;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .message-entry:last-child {
+      border-bottom: none;
+    }
+    .msg-time {
+      color: #666;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .msg-direction {
+      flex-shrink: 0;
+      font-weight: bold;
+      width: 24px;
+      text-align: center;
+    }
+    .msg-direction.in {
+      color: #4caf50;
+    }
+    .msg-direction.out {
+      color: #2196f3;
+    }
+    .msg-content {
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #ccc;
+    }
+    .empty-state {
+      color: #666;
+      font-style: italic;
+      padding: 12px 0;
+    }
+    .error-banner {
+      background: #4a1a1a;
+      border: 1px solid #f44336;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+      color: #ff8a80;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Raycast Firefox - Debug</h1>
+
+  <div id="error-banner" class="error-banner"></div>
+
+  <div class="section">
+    <h2>Connection Status</h2>
+    <div class="status-row">
+      <div id="status-indicator" class="status-indicator disconnected"></div>
+      <span id="status-text">Unknown</span>
+    </div>
+    <div id="native-app-name" class="native-app-name"></div>
+  </div>
+
+  <div class="section">
+    <h2>Recent Messages</h2>
+    <div class="controls">
+      <button id="btn-refresh" type="button">Refresh</button>
+      <button id="btn-auto-refresh" type="button">Auto-refresh: Off</button>
+    </div>
+    <div id="message-log" class="message-log">
+      <div class="empty-state">No messages yet.</div>
+    </div>
+  </div>
+
+  <script src="debug.js"></script>
+</body>
+</html>

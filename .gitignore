@@ -1,0 +1,5 @@
+# Dependencies
+extension/node_modules/
+
+# web-ext build output
+extension/web-ext-artifacts/

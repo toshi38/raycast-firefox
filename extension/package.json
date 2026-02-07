@@ -1,0 +1,14 @@
+{
+  "name": "raycast-firefox-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firefox WebExtension for Raycast tab management",
+  "scripts": {
+    "lint": "web-ext lint --source-dir .",
+    "start": "web-ext run --source-dir . --firefox=firefox",
+    "build": "web-ext build --source-dir . --overwrite-dest"
+  },
+  "devDependencies": {
+    "web-ext": "^9.0.0"
+  }
+}
