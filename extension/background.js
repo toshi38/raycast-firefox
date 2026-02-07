@@ -14,6 +14,7 @@
 const NATIVE_APP_NAME = "raycast_firefox";
 const MAX_RECENT_MESSAGES = 50;
 const DEFAULT_PAGE_SIZE = 500;
+const MAX_RESPONSE_BYTES = 512 * 1024; // Keep responses well under the 1MB native messaging limit
 
 // ---------------------------------------------------------------------------
 // Native port management
@@ -142,14 +143,30 @@ const handleListTabs = async (params = {}) => {
   // Paginate
   const total = mapped.length;
   const start = (page - 1) * pageSize;
-  const paginated = mapped.slice(start, start + pageSize);
+  let paginated = mapped.slice(start, start + pageSize);
+
+  // Trim page until serialized response fits within native messaging size budget.
+  // The caller uses the returned pageSize + hasMore to fetch subsequent pages.
+  while (paginated.length > 1) {
+    const result = {
+      tabs: paginated,
+      total,
+      page,
+      pageSize: paginated.length,
+      hasMore: start + paginated.length < total,
+    };
+    if (JSON.stringify(result).length <= MAX_RESPONSE_BYTES) {
+      return result;
+    }
+    paginated = paginated.slice(0, Math.floor(paginated.length * 0.75));
+  }
 
   return {
     tabs: paginated,
     total,
     page,
-    pageSize,
-    hasMore: start + pageSize < total,
+    pageSize: paginated.length,
+    hasMore: start + paginated.length < total,
   };
 };
 
