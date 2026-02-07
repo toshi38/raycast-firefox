@@ -1,0 +1,17 @@
+{
+  "name": "raycast-firefox-native-host",
+  "version": "1.0.0",
+  "private": true,
+  "main": "host.js",
+  "scripts": {
+    "start": "node host.js",
+    "start:pretty": "node host.js 2>&1 | pino-pretty"
+  },
+  "dependencies": {
+    "pino": "^9",
+    "pino-roll": "^1"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13"
+  }
+}

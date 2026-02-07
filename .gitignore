@@ -1,5 +1,6 @@
 # Dependencies
 extension/node_modules/
+native-host/node_modules/
 
 # web-ext build output
 extension/web-ext-artifacts/

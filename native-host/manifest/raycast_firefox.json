@@ -1,0 +1,7 @@
+{
+  "name": "raycast_firefox",
+  "description": "Raycast Firefox tab management bridge",
+  "path": "/PLACEHOLDER/path/to/native-host/run.sh",
+  "type": "stdio",
+  "allowed_extensions": ["raycast-firefox@lau.engineering"]
+}
