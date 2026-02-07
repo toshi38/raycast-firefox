@@ -7,7 +7,7 @@
 
 ### Communication Layer
 
-- [ ] **COMM-01**: Companion Firefox WebExtension that uses `browser.tabs` API to access tab data
+- [x] **COMM-01**: Companion Firefox WebExtension that uses `browser.tabs` API to access tab data
 - [ ] **COMM-02**: Native Messaging Host that bridges Firefox WebExtension and Raycast extension via localhost HTTP
 - [ ] **COMM-03**: Native messaging protocol implementation (length-prefixed JSON over stdin/stdout)
 - [ ] **COMM-04**: Automated setup command to register native messaging host manifest with Firefox
@@ -65,7 +65,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COMM-01 | Phase 1 | Pending |
+| COMM-01 | Phase 1 | Complete |
 | COMM-02 | Phase 2 | Pending |
 | COMM-03 | Phase 2 | Pending |
 | COMM-04 | Phase 8 | Pending |
@@ -86,4 +86,4 @@
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-06 after roadmap creation*
+*Last updated: 2026-02-07 after Phase 1 completion*
