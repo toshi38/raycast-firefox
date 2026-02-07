@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 ## Current Position
 
 Phase: 2 of 8 (Native Messaging Bridge)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-07 -- Completed 02-01-PLAN.md
+Last activity: 2026-02-07 -- Completed 02-02-PLAN.md
 
-Progress: [███░░░░░░░░░░░░░░░░░░░░] 3/23 (13%)
+Progress: [████░░░░░░░░░░░░░░░░░░░] 4/23 (17%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 3.1min
-- Total execution time: 0.15 hours
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 Firefox WebExtension | 2/2 | 7min | 3.5min |
-| 02 Native Messaging Bridge | 1/3 | 2min | 2min |
+| 02 Native Messaging Bridge | 2/3 | 5min | 2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (5min), 02-01 (2min)
+- Last 5 plans: 01-01 (2min), 01-02 (5min), 02-01 (2min), 02-02 (3min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -55,6 +55,10 @@ Recent decisions affecting current work:
 - 02-01: Protocol decoder accepts logger as optional parameter (avoids circular dependencies)
 - 02-01: host.js exports sendNativeMessage/isNativeConnected for bridge module
 - 02-01: Signal handlers log but do not exit -- lifecycle module handles cleanup
+- 02-02: HTTP server starts lazily on first native message, not on host launch
+- 02-02: Bridge uses crypto.randomUUID() for request IDs
+- 02-02: Port file written atomically via temp file + rename
+- 02-02: Host survives stdin EOF and continues serving HTTP with error messages
 
 ### Pending Todos
 
@@ -68,5 +72,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
