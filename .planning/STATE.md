@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 2 - Native Messaging Bridge
+**Current focus:** Phase 3 - Raycast Tab List
 
 ## Current Position
 
-Phase: 2 of 8 (Native Messaging Bridge)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-07 -- Completed 02-02-PLAN.md
+Phase: 2 of 8 (Native Messaging Bridge) -- COMPLETE
+Plan: 3 of 3 in current phase
+Status: Complete
+Last activity: 2026-02-07 -- Completed 02-03-PLAN.md (integration verification)
 
-Progress: [████░░░░░░░░░░░░░░░░░░░] 4/23 (17%)
+Progress: [██████░░░░░░░░░░░░░░░░░] 5/23 (22%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 3.1min
-- Total execution time: 0.2 hours
+- Total plans completed: 5
+- Average duration: 5min
+- Total execution time: 0.5 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 Firefox WebExtension | 2/2 | 7min | 3.5min |
-| 02 Native Messaging Bridge | 2/3 | 5min | 2.5min |
+| 02 Native Messaging Bridge | 3/3 | 20min | 6.7min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2min), 01-02 (5min), 02-01 (2min), 02-02 (3min)
-- Trend: Consistent
+- Last 5 plans: 01-02 (5min), 02-01 (2min), 02-02 (3min), 02-03 (15min)
+- Trend: 02-03 longer due to human-in-the-loop testing + bug fixes
 
 *Updated after each plan completion*
 
@@ -46,7 +46,7 @@ Recent decisions affecting current work:
 - Roadmap: Use Manifest V2 for WebExtension (MV3 Event Pages complicate native messaging)
 - Roadmap: Native Messaging Host is Node.js (not compiled binary -- Raycast Store compatibility)
 - Roadmap: Fixed localhost port for HTTP bridge (dynamic port discovery deferred unless conflicts found)
-- 01-01: Lazy native port connection (connect on first request, not on extension load)
+- 01-01→02-03: Eager native port connection (reversed from lazy; extension connects on load)
 - 01-01: Auto-reconnect via port nulling on disconnect
 - 01-01: Container info degrades gracefully to null if contextualIdentities disabled
 - 01-01: Pagination default pageSize=500
@@ -59,6 +59,9 @@ Recent decisions affecting current work:
 - 02-02: Bridge uses crypto.randomUUID() for request IDs
 - 02-02: Port file written atomically via temp file + rename
 - 02-02: Host survives stdin EOF and continues serving HTTP with error messages
+- 02-03: Protocol inbound limit raised to 1MB (matching Firefox's native messaging limit)
+- 02-03: Size-aware pagination trims responses to fit under 512KB
+- 02-03: macOS tab switch uses NSRunningApplication for single-window focus (not all windows)
 
 ### Pending Todos
 
@@ -72,5 +75,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-07
-Stopped at: Completed 02-02-PLAN.md
+Stopped at: Phase 2 complete. Ready for Phase 3.
 Resume file: None
