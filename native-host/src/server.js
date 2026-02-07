@@ -159,10 +159,16 @@ async function handleSwitchTab(req, res) {
       windowId: body.windowId,
     });
 
-    // Raise Firefox to foreground on macOS
+    // Raise Firefox to foreground on macOS — only the focused window, not all windows.
+    // NSApplicationActivateIgnoringOtherApps (2) without NSApplicationActivateAllWindows (1)
+    // brings only the key/main window forward, matching alt-tab behavior.
     if (process.platform === 'darwin') {
-      execFile('osascript', ['-e', 'tell application "Firefox" to activate'], (err) => {
-        if (err) logger.warn({ err: err.message }, 'Failed to activate Firefox via osascript');
+      execFile('osascript', ['-l', 'JavaScript', '-e', `
+        ObjC.import("AppKit");
+        var apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier("org.mozilla.firefox");
+        if (apps.count > 0) apps.objectAtIndex(0).activateWithOptions(2);
+      `], (err) => {
+        if (err) logger.warn({ err: err.message }, 'Failed to activate Firefox window');
       });
     }
 
