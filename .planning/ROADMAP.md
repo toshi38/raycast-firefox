@@ -64,12 +64,11 @@ Plans:
   2. Raycast displays a list of all open Firefox tabs with title and URL
   3. User can type to fuzzy-filter tabs by title or URL
   4. Tab list updates when Raycast command is re-invoked (reflects current Firefox state)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Raycast extension scaffold (create-raycast-extension)
-- [ ] 03-02: HTTP client fetching tabs from native messaging host
-- [ ] 03-03: List UI with fuzzy search over title and URL
+- [ ] 03-01-PLAN.md -- Raycast extension scaffold + Search Firefox Tabs command implementation
+- [ ] 03-02-PLAN.md -- End-to-end verification in Raycast (human checkpoint)
 
 ### Phase 4: Tab Switching
 **Goal**: Users can select a tab in Raycast and Firefox instantly brings that tab to the front
@@ -159,7 +158,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 |-------|---------------|--------|-----------|
 | 1. Firefox WebExtension | 2/2 | Complete | 2026-02-07 |
 | 2. Native Messaging Bridge | 0/3 | Not started | - |
-| 3. Raycast Tab List | 0/3 | Not started | - |
+| 3. Raycast Tab List | 0/2 | Not started | - |
 | 4. Tab Switching | 0/3 | Not started | - |
 | 5. Tab List Polish | 0/3 | Not started | - |
 | 6. Tab Close Action | 0/3 | Not started | - |
