@@ -4,8 +4,9 @@
  * Persistent background script that handles native messaging communication
  * for tab management commands: list-tabs, switch-tab, close-tab.
  *
- * Native port is lazily connected on first request and auto-reconnects
- * after disconnection by nulling the port reference.
+ * Connects to native host eagerly on load so the host process starts
+ * immediately. Auto-reconnects after disconnection by nulling the port
+ * reference — next getPort() call re-establishes the connection.
  */
 
 "use strict";
@@ -186,7 +187,14 @@ const handleCloseTab = async (params = {}) => {
  * Every response echoes the message `id` for request-response correlation.
  */
 const handleMessage = async (message) => {
-  const { id, command, params } = message;
+  const { id, command, params, type } = message;
+
+  // Handle version handshake from native host (not a command request)
+  if (type === "handshake") {
+    console.log("[Raycast Firefox] Received handshake from native host:", message);
+    sendSuccess(id, { extensionVersion: browser.runtime.getManifest().version });
+    return;
+  }
 
   if (!id) {
     console.warn("[Raycast Firefox] Message missing id field, ignoring:", message);
@@ -230,5 +238,11 @@ browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 });
+
+// Connect to native host eagerly on load so the host process starts
+// immediately. The host won't start its HTTP server until it receives
+// our first message (lazy server startup), but we need the connection
+// established for the bridge to work.
+getPort();
 
 console.log("[Raycast Firefox] Background script loaded");
