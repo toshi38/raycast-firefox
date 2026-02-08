@@ -1,5 +1,12 @@
-import { List } from "@raycast/api";
-import { useFetch } from "@raycast/utils";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  List,
+  closeMainWindow,
+  showHUD,
+} from "@raycast/api";
+import { getFavicon, useFetch } from "@raycast/utils";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
@@ -74,6 +81,27 @@ function urlKeywords(url: string): string[] {
   }
 }
 
+// -- Tab switching --
+
+async function switchTab(tabId: number, windowId: number) {
+  await closeMainWindow({ clearRootSearch: true });
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/switch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tabId, windowId }),
+    });
+    if (!response.ok) {
+      const body = (await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }))) as { error?: string };
+      await showHUD(`Switch failed: ${body.error ?? "Unknown error"}`);
+    }
+  } catch {
+    await showHUD("Could not connect to Firefox");
+  }
+}
+
 // -- Component --
 
 export default function SearchTabs() {
@@ -91,9 +119,19 @@ export default function SearchTabs() {
       {tabs.map((tab) => (
         <List.Item
           key={String(tab.id)}
+          icon={getFavicon(tab.url)}
           title={tab.title || "Untitled"}
           subtitle={tab.url}
           keywords={urlKeywords(tab.url)}
+          actions={
+            <ActionPanel>
+              <Action
+                title="Switch to Tab"
+                icon={Icon.Globe}
+                onAction={() => switchTab(tab.id, tab.windowId)}
+              />
+            </ActionPanel>
+          }
         />
       ))}
     </List>
