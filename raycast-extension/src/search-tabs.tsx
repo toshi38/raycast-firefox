@@ -106,17 +106,19 @@ async function switchTab(tabId: number, windowId: number) {
 
 async function fetchAllTabs(): Promise<Tab[]> {
   const allTabs: Tab[] = [];
-  let page = 1;
   let hasMore = true;
   const maxPages = 20;
+  let pages = 0;
 
-  while (hasMore && page <= maxPages) {
-    const res = await fetch(`http://127.0.0.1:${port}/tabs?page=${page}`);
+  while (hasMore && pages < maxPages) {
+    const res = await fetch(`http://127.0.0.1:${port}/tabs?offset=${allTabs.length}`);
     if (!res.ok) break;
     const json = (await res.json()) as TabsResponse;
-    allTabs.push(...(json.data?.tabs ?? []));
+    const batch = json.data?.tabs ?? [];
+    if (batch.length === 0) break;
+    allTabs.push(...batch);
     hasMore = json.data?.hasMore ?? false;
-    page++;
+    pages++;
   }
 
   return allTabs;

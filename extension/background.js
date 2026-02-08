@@ -140,9 +140,9 @@ const handleListTabs = async (params = {}) => {
     container: containerMap[tab.cookieStoreId] || null,
   }));
 
-  // Paginate
+  // Paginate — use explicit offset if provided, else calculate from page
   const total = mapped.length;
-  const start = (page - 1) * pageSize;
+  const start = params.offset != null ? Math.max(0, parseInt(params.offset, 10) || 0) : (page - 1) * pageSize;
   let paginated = mapped.slice(start, start + pageSize);
 
   // Trim page until serialized response fits within native messaging size budget.

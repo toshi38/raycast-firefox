@@ -121,6 +121,7 @@ async function handleGetTabs(req, res, searchParams) {
     const params = {};
     if (searchParams.has('page')) params.page = searchParams.get('page');
     if (searchParams.has('pageSize')) params.pageSize = searchParams.get('pageSize');
+    if (searchParams.has('offset')) params.offset = searchParams.get('offset');
     const data = await sendRequest('list-tabs', params);
     sendJSON(res, 200, {
       ok: true,
