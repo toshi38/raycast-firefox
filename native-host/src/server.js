@@ -101,7 +101,7 @@ async function handleRequest(req, res) {
     if (pathname === '/health' && method === 'GET') {
       sendJSON(res, 200, handleHealth(currentPort));
     } else if (pathname === '/tabs' && method === 'GET') {
-      await handleGetTabs(req, res);
+      await handleGetTabs(req, res, parsedUrl.searchParams);
     } else if (pathname === '/switch' && method === 'POST') {
       await handleSwitchTab(req, res);
     } else {
@@ -116,9 +116,12 @@ async function handleRequest(req, res) {
 /**
  * GET /tabs - List all open Firefox tabs.
  */
-async function handleGetTabs(req, res) {
+async function handleGetTabs(req, res, searchParams) {
   try {
-    const data = await sendRequest('list-tabs', {});
+    const params = {};
+    if (searchParams.has('page')) params.page = searchParams.get('page');
+    if (searchParams.has('pageSize')) params.pageSize = searchParams.get('pageSize');
+    const data = await sendRequest('list-tabs', params);
     sendJSON(res, 200, {
       ok: true,
       data,

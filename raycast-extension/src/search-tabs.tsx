@@ -6,7 +6,7 @@ import {
   closeMainWindow,
   showHUD,
 } from "@raycast/api";
-import { getFavicon, useFetch } from "@raycast/utils";
+import { getFavicon, usePromise } from "@raycast/utils";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
@@ -102,17 +102,30 @@ async function switchTab(tabId: number, windowId: number) {
   }
 }
 
+// -- Fetch all tabs (handles pagination) --
+
+async function fetchAllTabs(): Promise<Tab[]> {
+  const allTabs: Tab[] = [];
+  let page = 1;
+  let hasMore = true;
+  const maxPages = 20;
+
+  while (hasMore && page <= maxPages) {
+    const res = await fetch(`http://127.0.0.1:${port}/tabs?page=${page}`);
+    if (!res.ok) break;
+    const json = (await res.json()) as TabsResponse;
+    allTabs.push(...(json.data?.tabs ?? []));
+    hasMore = json.data?.hasMore ?? false;
+    page++;
+  }
+
+  return allTabs;
+}
+
 // -- Component --
 
 export default function SearchTabs() {
-  const { data, isLoading } = useFetch<TabsResponse>(
-    `http://127.0.0.1:${port}/tabs`,
-    {
-      keepPreviousData: true,
-    },
-  );
-
-  const tabs = data?.data?.tabs ?? [];
+  const { data: tabs = [], isLoading } = usePromise(fetchAllTabs);
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search Firefox tabs...">
