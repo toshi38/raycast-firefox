@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 3 complete -- ready for Phase 4 (Tab Switching)
+**Current focus:** Phase 4 complete -- ready for Phase 5 (Tab List Polish)
 
 ## Current Position
 
-Phase: 3 of 8 (Raycast Tab List)
-Plan: 2 of 2 in current phase
+Phase: 4 of 8 (Tab Switching)
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-07 -- Completed 03-02-PLAN.md (end-to-end verification, human-approved)
+Last activity: 2026-02-08 -- Completed 04-01-PLAN.md (tab switching with human verification)
 
-Progress: [████████░░░░░░░░░░░░░░] 7/22 (32%)
+Progress: [██████████░░░░░░░░░░░░] 8/22 (36%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 5min
-- Total execution time: 0.6 hours
+- Total plans completed: 8
+- Average duration: 6min
+- Total execution time: 0.8 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [████████░░░░░░░░░░░░░░] 7
 | 01 Firefox WebExtension | 2/2 | 7min | 3.5min |
 | 02 Native Messaging Bridge | 3/3 | 20min | 6.7min |
 | 03 Raycast Tab List | 2/2 | 5min | 2.5min |
+| 04 Tab Switching | 1/1 | 15min | 15min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (3min), 02-03 (15min), 03-01 (3min), 03-02 (2min)
-- Trend: Phase 3 fast -- scaffold + verification only, no complex logic
+- Last 5 plans: 02-03 (15min), 03-01 (3min), 03-02 (2min), 04-01 (15min)
+- Trend: Phase 4 longer due to pagination bug fix during verification
 
 *Updated after each plan completion*
 
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - 03-01: Port discovery at module level to avoid re-reading on every render
 - 03-01: URL keywords include hostname, hostname parts, and path segments for comprehensive search
 - 03-02: Raycast fuzzy filter space-token behavior is expected (splits on spaces, matches independently)
+- 04-01: Close-first pattern: closeMainWindow before fetch POST for perceived instant switching
+- 04-01: getFavicon added in Phase 4 rather than deferring to Phase 5
+- 04-01: Offset-based pagination to handle size-aware trimming changing effective page sizes
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-07T20:22:15Z
-Stopped at: Completed 03-02-PLAN.md. Phase 3 fully verified and complete.
+Last session: 2026-02-08
+Stopped at: Completed 04-01-PLAN.md. Phase 4 fully verified and complete.
 Resume file: None

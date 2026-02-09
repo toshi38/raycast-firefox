@@ -21,7 +21,7 @@
 
 ### Tab Actions
 
-- [ ] **ACTN-01**: User can switch to a selected tab (Firefox comes to front, tab activates)
+- [x] **ACTN-01**: User can switch to a selected tab (Firefox comes to front, tab activates)
 - [ ] **ACTN-02**: User can close a tab from Raycast without switching to it
 
 ### Error Handling
@@ -73,7 +73,7 @@
 | TABS-02 | Phase 3 | Complete |
 | TABS-03 | Phase 5 | Pending |
 | TABS-04 | Phase 5 | Pending |
-| ACTN-01 | Phase 4 | Pending |
+| ACTN-01 | Phase 4 | Complete |
 | ACTN-02 | Phase 6 | Pending |
 | ERRH-01 | Phase 7 | Pending |
 | ERRH-02 | Phase 7 | Pending |
@@ -86,4 +86,4 @@
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-07 after Phase 3 completion*
+*Last updated: 2026-02-08 after Phase 4 completion*

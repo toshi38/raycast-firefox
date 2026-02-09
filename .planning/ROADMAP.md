@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Firefox WebExtension** - Companion extension that exposes tab data via the browser.tabs API
 - [x] **Phase 2: Native Messaging Bridge** - Native Messaging Host bridging Firefox to localhost HTTP
 - [x] **Phase 3: Raycast Tab List** - Raycast extension displaying open Firefox tabs with search
-- [ ] **Phase 4: Tab Switching** - User can select a tab in Raycast and Firefox brings it to front
+- [x] **Phase 4: Tab Switching** - User can select a tab in Raycast and Firefox brings it to front
 - [ ] **Phase 5: Tab List Polish** - Active tab indicator and favicons for visual completeness
 - [ ] **Phase 6: Tab Close Action** - Close a tab from Raycast without switching to it
 - [ ] **Phase 7: Error Handling** - Graceful messages when Firefox, WebExtension, or host is unavailable
@@ -82,7 +82,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md -- Add ActionPanel with Switch to Tab action + human verification
+- [x] 04-01-PLAN.md -- Add ActionPanel with Switch to Tab action + human verification
 
 ### Phase 5: Tab List Polish
 **Goal**: The tab list looks polished with visual indicators that match the quality of Chrome/Safari Raycast extensions
@@ -157,7 +157,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 | 1. Firefox WebExtension | 2/2 | Complete | 2026-02-07 |
 | 2. Native Messaging Bridge | 3/3 | Complete | 2026-02-07 |
 | 3. Raycast Tab List | 2/2 | Complete | 2026-02-07 |
-| 4. Tab Switching | 0/1 | Not started | - |
+| 4. Tab Switching | 1/1 | Complete | 2026-02-08 |
 | 5. Tab List Polish | 0/3 | Not started | - |
 | 6. Tab Close Action | 0/3 | Not started | - |
 | 7. Error Handling | 0/3 | Not started | - |
@@ -165,4 +165,4 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-02-07 (Phase 4 planned)*
+*Last updated: 2026-02-08 (Phase 4 complete)*
