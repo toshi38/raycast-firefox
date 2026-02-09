@@ -7,6 +7,7 @@ const { logger } = require('./logger');
 const { sendRequest } = require('./bridge');
 const { writePortFile } = require('./lifecycle');
 const { handleHealth } = require('./health');
+const faviconCache = require('./favicon-cache');
 
 const BASE_PORT = 26394;
 const MAX_PORT_ATTEMPTS = 10;
@@ -104,6 +105,8 @@ async function handleRequest(req, res) {
       await handleGetTabs(req, res, parsedUrl.searchParams);
     } else if (pathname === '/switch' && method === 'POST') {
       await handleSwitchTab(req, res);
+    } else if (pathname === '/favicon' && method === 'GET') {
+      await handleGetFavicon(req, res, parsedUrl.searchParams);
     } else {
       sendJSON(res, 404, { ok: false, error: 'Not found' });
     }
@@ -187,6 +190,29 @@ async function handleSwitchTab(req, res) {
       error: err.message,
       meta: { timestamp: Date.now() },
     });
+  }
+}
+
+/**
+ * GET /favicon - Fetch and cache a favicon by URL.
+ */
+async function handleGetFavicon(req, res, searchParams) {
+  const url = searchParams.get('url');
+  if (!url) {
+    sendJSON(res, 400, { ok: false, error: 'url query parameter is required' });
+    return;
+  }
+
+  try {
+    const dataUri = await faviconCache.getOrFetch(url);
+    if (dataUri) {
+      sendJSON(res, 200, { ok: true, data: { dataUri } });
+    } else {
+      sendJSON(res, 404, { ok: false, error: 'Favicon not available' });
+    }
+  } catch (err) {
+    logger.error({ err: err.message, url }, 'Favicon fetch error');
+    sendJSON(res, 502, { ok: false, error: 'Failed to fetch favicon' });
   }
 }
 
