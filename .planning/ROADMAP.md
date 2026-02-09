@@ -92,12 +92,12 @@ Plans:
   1. The currently active Firefox tab is visually distinguished in the Raycast list (icon or accessory)
   2. Each tab displays its favicon next to the title
   3. Tabs without favicons show a sensible fallback (default icon)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Active tab indicator (accessory icon or tag)
-- [ ] 05-02: Favicon display from WebExtension favIconUrl data
-- [ ] 05-03: Fallback icons for tabs without favicons
+- [ ] 05-01-PLAN.md -- Tab data enrichment (lastAccessed, colorCode) + UI polish (accessories, sorting, fallback icons)
+- [ ] 05-02-PLAN.md -- Native host favicon cache module + HTTP endpoint
+- [ ] 05-03-PLAN.md -- Wire favicons into Raycast extension + human verification
 
 ### Phase 6: Tab Close Action
 **Goal**: Users can close a Firefox tab directly from Raycast without switching to it
@@ -165,4 +165,4 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-02-08 (Phase 4 complete)*
+*Last updated: 2026-02-09 (Phase 5 planned)*
