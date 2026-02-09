@@ -4,11 +4,14 @@ import {
   Color,
   Icon,
   Image,
+  Keyboard,
   List,
+  Toast,
   closeMainWindow,
   showHUD,
+  showToast,
 } from "@raycast/api";
-import { getAvatarIcon, usePromise } from "@raycast/utils";
+import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
@@ -275,6 +278,38 @@ async function switchTab(tabId: number, windowId: number) {
   }
 }
 
+// -- Tab closing --
+
+async function closeTab(
+  tabId: number,
+  mutate: MutatePromise<Tab[], undefined>,
+) {
+  const toast = await showToast({
+    style: Toast.Style.Animated,
+    title: "Closing tab...",
+  });
+  try {
+    await mutate(
+      fetch(`http://127.0.0.1:${port}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tabId }),
+      }),
+      {
+        optimisticUpdate(data) {
+          return (data ?? []).filter((t) => t.id !== tabId);
+        },
+      },
+    );
+    toast.style = Toast.Style.Success;
+    toast.title = "Tab closed";
+  } catch {
+    toast.style = Toast.Style.Failure;
+    toast.title = "Failed to close tab";
+    toast.message = "Could not connect to Firefox";
+  }
+}
+
 // -- Fetch all tabs (handles pagination) --
 
 async function fetchAllTabs(): Promise<Tab[]> {
@@ -302,7 +337,7 @@ async function fetchAllTabs(): Promise<Tab[]> {
 // -- Component --
 
 export default function SearchTabs() {
-  const { data: tabs = [], isLoading } = usePromise(fetchAllTabs);
+  const { data: tabs = [], isLoading, mutate } = usePromise(fetchAllTabs);
   const [favicons, setFavicons] = useState<Record<string, string>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
 
@@ -387,11 +422,22 @@ export default function SearchTabs() {
           )}
           actions={
             <ActionPanel>
-              <Action
-                title="Switch to Tab"
-                icon={Icon.Globe}
-                onAction={() => switchTab(tab.id, tab.windowId)}
-              />
+              <ActionPanel.Section>
+                <Action
+                  title="Switch to Tab"
+                  icon={Icon.Globe}
+                  onAction={() => switchTab(tab.id, tab.windowId)}
+                />
+              </ActionPanel.Section>
+              <ActionPanel.Section>
+                <Action
+                  title="Close Tab"
+                  icon={Icon.Trash}
+                  style={Action.Style.Destructive}
+                  shortcut={Keyboard.Shortcut.Common.Remove}
+                  onAction={() => closeTab(tab.id, mutate)}
+                />
+              </ActionPanel.Section>
             </ActionPanel>
           }
         />
