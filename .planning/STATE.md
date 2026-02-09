@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 5 in progress (Tab List Polish) -- Plans 01 and 02 complete, Plan 03 remaining
+**Current focus:** Phase 5 complete (Tab List Polish) -- Ready for Phase 6 (Tab Close Action)
 
 ## Current Position
 
 Phase: 5 of 8 (Tab List Polish)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-09 -- Completed 05-01-PLAN.md (tab list polish with accessories, sorting, fallback icons)
+Plan: 3 of 3 in current phase
+Status: Complete
+Last activity: 2026-02-09 -- Completed Phase 5 (all 3 plans)
 
-Progress: [██████████████░░░░░░░░] 10/22 (45%)
+Progress: [███████████████████░░░] 11/22 (50%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 5min
-- Total execution time: 0.9 hours
+- Total plans completed: 11
+- Average duration: 6min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [██████████████░░░░░░░░] 1
 | 02 Native Messaging Bridge | 3/3 | 20min | 6.7min |
 | 03 Raycast Tab List | 2/2 | 5min | 2.5min |
 | 04 Tab Switching | 1/1 | 15min | 15min |
-| 05 Tab List Polish | 2/3 | 5min | 2.5min |
+| 05 Tab List Polish | 3/3 | 20min | 6.7min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min), 03-02 (2min), 04-01 (15min), 05-02 (1min), 05-01 (3min)
-- Trend: Phase 5 plans executing quickly -- straightforward additive changes
+- Last 5 plans: 03-02 (2min), 04-01 (15min), 05-01 (3min), 05-02 (1min), 05-03 (15min)
+- Trend: 05-03 took longer due to 3 bug fixes discovered during human verification
 
 *Updated after each plan completion*
 
@@ -79,6 +79,9 @@ Recent decisions affecting current work:
 - 05-02: SHA-256 hash of favicon URL as disk cache filename for safe filesystem keys
 - 05-02: Memory cache Map with 500-entry limit, FIFO eviction
 - 05-02: Native fetch with AbortSignal.timeout(5000) for favicon fetching (Node 18+)
+- 05-03: Firefox provides favicons as data: URIs -- use directly, skip native host proxy
+- 05-03: Map Firefox container color names to Raycast Color enum (colorCode property is null)
+- 05-03: Surrogate pair detection for emoji tab titles to avoid getAvatarIcon crash
 
 ### Pending Todos
 
@@ -92,5 +95,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 05-01-PLAN.md. Plans 05-01 and 05-02 complete. Plan 05-03 remaining.
+Stopped at: Phase 5 complete. All 3 plans executed and verified. Ready for Phase 6.
 Resume file: None

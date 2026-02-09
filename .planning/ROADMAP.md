@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Native Messaging Bridge** - Native Messaging Host bridging Firefox to localhost HTTP
 - [x] **Phase 3: Raycast Tab List** - Raycast extension displaying open Firefox tabs with search
 - [x] **Phase 4: Tab Switching** - User can select a tab in Raycast and Firefox brings it to front
-- [ ] **Phase 5: Tab List Polish** - Active tab indicator and favicons for visual completeness
+- [x] **Phase 5: Tab List Polish** - Active tab indicator and favicons for visual completeness
 - [ ] **Phase 6: Tab Close Action** - Close a tab from Raycast without switching to it
 - [ ] **Phase 7: Error Handling** - Graceful messages when Firefox, WebExtension, or host is unavailable
 - [ ] **Phase 8: Setup Automation** - Automated command to register native messaging host with Firefox
@@ -95,9 +95,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md -- Tab data enrichment (lastAccessed, colorCode) + UI polish (accessories, sorting, fallback icons)
-- [ ] 05-02-PLAN.md -- Native host favicon cache module + HTTP endpoint
-- [ ] 05-03-PLAN.md -- Wire favicons into Raycast extension + human verification
+- [x] 05-01-PLAN.md -- Tab data enrichment (lastAccessed, colorCode) + UI polish (accessories, sorting, fallback icons)
+- [x] 05-02-PLAN.md -- Native host favicon cache module + HTTP endpoint
+- [x] 05-03-PLAN.md -- Wire favicons into Raycast extension + human verification
 
 ### Phase 6: Tab Close Action
 **Goal**: Users can close a Firefox tab directly from Raycast without switching to it
@@ -158,7 +158,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 | 2. Native Messaging Bridge | 3/3 | Complete | 2026-02-07 |
 | 3. Raycast Tab List | 2/2 | Complete | 2026-02-07 |
 | 4. Tab Switching | 1/1 | Complete | 2026-02-08 |
-| 5. Tab List Polish | 0/3 | Not started | - |
+| 5. Tab List Polish | 3/3 | Complete | 2026-02-09 |
 | 6. Tab Close Action | 0/3 | Not started | - |
 | 7. Error Handling | 0/3 | Not started | - |
 | 8. Setup Automation | 0/3 | Not started | - |
