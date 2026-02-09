@@ -12,6 +12,7 @@ import { getAvatarIcon, usePromise } from "@raycast/utils";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
+import { useEffect, useRef, useState } from "react";
 
 // -- Types matching the native host HTTP API response --
 
@@ -169,6 +170,24 @@ function getFallbackIcon(tab: Tab): Image.ImageLike {
   });
 }
 
+/**
+ * Return the best available icon for a tab:
+ * - If a cached favicon data URI is available, use it
+ * - Otherwise fall back to letter avatar / Firefox icon / loading spinner
+ */
+function getTabIcon(
+  tab: Tab,
+  favicons: Record<string, string>,
+): Image.ImageLike {
+  if (tab.favIconUrl && favicons[tab.favIconUrl]) {
+    return {
+      source: favicons[tab.favIconUrl],
+      mask: Image.Mask.RoundedRectangle,
+    };
+  }
+  return getFallbackIcon(tab);
+}
+
 // -- Accessory helpers --
 
 /**
@@ -259,6 +278,62 @@ async function fetchAllTabs(): Promise<Tab[]> {
 
 export default function SearchTabs() {
   const { data: tabs = [], isLoading } = usePromise(fetchAllTabs);
+  const [favicons, setFavicons] = useState<Record<string, string>>({});
+  const fetchedRef = useRef<Set<string>>(new Set());
+
+  // Fetch favicons for all tabs that have a favIconUrl
+  useEffect(() => {
+    if (!tabs || tabs.length === 0) return;
+
+    // Collect unique favIconUrls that we haven't fetched yet
+    const urlsToFetch = [
+      ...new Set(
+        tabs
+          .filter(
+            (t) =>
+              t.favIconUrl &&
+              !favicons[t.favIconUrl] &&
+              !fetchedRef.current.has(t.favIconUrl),
+          )
+          .map((t) => t.favIconUrl as string),
+      ),
+    ];
+
+    if (urlsToFetch.length === 0) return;
+
+    // Mark as in-flight so we don't re-fetch on next render
+    for (const url of urlsToFetch) {
+      fetchedRef.current.add(url);
+    }
+
+    // Fetch all favicons in parallel, batch-update state when all settle
+    const results: Record<string, string> = {};
+    let settled = 0;
+
+    urlsToFetch.forEach(async (url) => {
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:${port}/favicon?url=${encodeURIComponent(url)}`,
+        );
+        if (res.ok) {
+          const json = (await res.json()) as {
+            ok: boolean;
+            data?: { dataUri: string };
+          };
+          if (json.ok && json.data?.dataUri) {
+            results[url] = json.data.dataUri;
+          }
+        }
+      } catch {
+        // Favicon fetch failed -- fallback icon will be used
+      } finally {
+        settled++;
+        if (settled === urlsToFetch.length) {
+          setFavicons((prev) => ({ ...prev, ...results }));
+        }
+      }
+    });
+  }, [tabs]);
 
   // Sort tabs by most recently accessed first
   const sortedTabs = [...tabs].sort(
@@ -275,7 +350,7 @@ export default function SearchTabs() {
       {sortedTabs.map((tab) => (
         <List.Item
           key={String(tab.id)}
-          icon={getFallbackIcon(tab)}
+          icon={getTabIcon(tab, favicons)}
           title={tab.title || "Untitled"}
           subtitle={cleanUrl(tab.url)}
           keywords={urlKeywords(tab.url)}
