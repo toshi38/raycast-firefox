@@ -163,7 +163,16 @@ function getFallbackIcon(tab: Tab): Image.ImageLike {
     return Icon.CircleProgress;
   }
   const hostname = getHostname(tab.url);
-  const letter = (tab.title?.[0] || hostname?.[0] || "?").toUpperCase();
+  // Use charAt(0) and check for surrogates — emoji first chars are lone
+  // high surrogates which crash encodeURIComponent inside getAvatarIcon.
+  const raw = tab.title?.[0] ?? "";
+  const code = raw.charCodeAt(0);
+  const isSurrogate = code >= 0xd800 && code <= 0xdfff;
+  const letter = (
+    (isSurrogate ? "" : raw) ||
+    hostname?.[0] ||
+    "?"
+  ).toUpperCase();
   return getAvatarIcon(letter, {
     background: domainColor(hostname),
     gradient: false,
