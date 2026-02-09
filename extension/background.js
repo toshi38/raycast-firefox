@@ -117,6 +117,7 @@ const handleListTabs = async (params = {}) => {
       containerMap[ci.cookieStoreId] = {
         name: ci.name,
         color: ci.color,
+        colorCode: ci.colorCode,
         icon: ci.icon,
       };
     }
@@ -136,6 +137,7 @@ const handleListTabs = async (params = {}) => {
     pinned: tab.pinned,
     incognito: tab.incognito,
     status: tab.status,
+    lastAccessed: tab.lastAccessed,
     cookieStoreId: tab.cookieStoreId,
     container: containerMap[tab.cookieStoreId] || null,
   }));
