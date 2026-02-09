@@ -107,12 +107,10 @@ Plans:
   1. User can select "Close Tab" from the action menu on any tab in the Raycast list
   2. The tab closes in Firefox without Firefox coming to the foreground
   3. The Raycast list refreshes to reflect the closed tab
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 06-01: Close tab endpoint in native messaging host (/close)
-- [ ] 06-02: WebExtension browser.tabs.remove handler
-- [ ] 06-03: Raycast action menu integration with list refresh
+- [ ] 06-01-PLAN.md -- Native host /close endpoint + Raycast Close Tab action with optimistic removal + human verification
 
 ### Phase 7: Error Handling
 **Goal**: Users see clear, actionable messages when something in the communication chain is broken
@@ -159,7 +157,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 | 3. Raycast Tab List | 2/2 | Complete | 2026-02-07 |
 | 4. Tab Switching | 1/1 | Complete | 2026-02-08 |
 | 5. Tab List Polish | 3/3 | Complete | 2026-02-09 |
-| 6. Tab Close Action | 0/3 | Not started | - |
+| 6. Tab Close Action | 0/1 | Not started | - |
 | 7. Error Handling | 0/3 | Not started | - |
 | 8. Setup Automation | 0/3 | Not started | - |
 
