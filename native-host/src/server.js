@@ -105,6 +105,8 @@ async function handleRequest(req, res) {
       await handleGetTabs(req, res, parsedUrl.searchParams);
     } else if (pathname === '/switch' && method === 'POST') {
       await handleSwitchTab(req, res);
+    } else if (pathname === '/close' && method === 'POST') {
+      await handleCloseTab(req, res);
     } else if (pathname === '/favicon' && method === 'GET') {
       await handleGetFavicon(req, res, parsedUrl.searchParams);
     } else {
@@ -190,6 +192,31 @@ async function handleSwitchTab(req, res) {
       error: err.message,
       meta: { timestamp: Date.now() },
     });
+  }
+}
+
+/**
+ * POST /close - Close a specific tab (Firefox stays in background).
+ */
+async function handleCloseTab(req, res) {
+  let body;
+  try {
+    body = await parseBody(req);
+  } catch (err) {
+    sendJSON(res, 400, { ok: false, error: 'Invalid JSON body' });
+    return;
+  }
+
+  if (!body.tabId && body.tabId !== 0) {
+    sendJSON(res, 400, { ok: false, error: 'tabId is required' });
+    return;
+  }
+
+  try {
+    const data = await sendRequest('close-tab', { tabId: body.tabId });
+    sendJSON(res, 200, { ok: true, data, meta: { timestamp: Date.now() } });
+  } catch (err) {
+    sendJSON(res, 502, { ok: false, error: err.message, meta: { timestamp: Date.now() } });
   }
 }
 
