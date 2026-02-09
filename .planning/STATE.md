@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 5 in progress (Tab List Polish)
+**Current focus:** Phase 5 in progress (Tab List Polish) -- Plans 01 and 02 complete, Plan 03 remaining
 
 ## Current Position
 
 Phase: 5 of 8 (Tab List Polish)
 Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-09 -- Completed 05-02-PLAN.md (favicon caching)
+Last activity: 2026-02-09 -- Completed 05-01-PLAN.md (tab list polish with accessories, sorting, fallback icons)
 
 Progress: [██████████████░░░░░░░░] 10/22 (45%)
 
@@ -31,11 +31,11 @@ Progress: [██████████████░░░░░░░░] 1
 | 02 Native Messaging Bridge | 3/3 | 20min | 6.7min |
 | 03 Raycast Tab List | 2/2 | 5min | 2.5min |
 | 04 Tab Switching | 1/1 | 15min | 15min |
-| 05 Tab List Polish | 2/3 | 2min | 1min |
+| 05 Tab List Polish | 2/3 | 5min | 2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min), 03-02 (2min), 04-01 (15min), 05-01 (1min), 05-02 (1min)
-- Trend: Phase 5 plans executing quickly -- straightforward additive modules
+- Last 5 plans: 03-01 (3min), 03-02 (2min), 04-01 (15min), 05-02 (1min), 05-01 (3min)
+- Trend: Phase 5 plans executing quickly -- straightforward additive changes
 
 *Updated after each plan completion*
 
@@ -72,6 +72,10 @@ Recent decisions affecting current work:
 - 04-01: Close-first pattern: closeMainWindow before fetch POST for perceived instant switching
 - 04-01: getFavicon added in Phase 4 rather than deferring to Phase 5
 - 04-01: Offset-based pagination to handle size-aware trimming changing effective page sizes
+- 05-01: DJB2 hash for deterministic domain-to-color mapping across 14-color palette
+- 05-01: getAvatarIcon with gradient:false for cleaner single-color letter avatars
+- 05-01: Full URL added to keywords array so search matches protocol and query params despite cleaned subtitle
+- 05-01: Accessory order: Pin, Active, Container, Window (most important rightmost near eye focus)
 - 05-02: SHA-256 hash of favicon URL as disk cache filename for safe filesystem keys
 - 05-02: Memory cache Map with 500-entry limit, FIFO eviction
 - 05-02: Native fetch with AbortSignal.timeout(5000) for favicon fetching (Node 18+)
@@ -88,5 +92,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 05-02-PLAN.md. Favicon caching module and endpoint ready. Plan 05-03 remaining.
+Stopped at: Completed 05-01-PLAN.md. Plans 05-01 and 05-02 complete. Plan 05-03 remaining.
 Resume file: None
