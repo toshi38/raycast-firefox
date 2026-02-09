@@ -188,6 +188,11 @@ function getTabIcon(
   tab: Tab,
   favicons: Record<string, string>,
 ): Image.ImageLike {
+  // Use data URIs directly from Firefox (most common case)
+  if (tab.favIconUrl?.startsWith("data:")) {
+    return { source: tab.favIconUrl, mask: Image.Mask.RoundedRectangle };
+  }
+  // Use cached favicon fetched via native host for http(s) URLs
   if (tab.favIconUrl && favicons[tab.favIconUrl]) {
     return {
       source: favicons[tab.favIconUrl],
@@ -198,6 +203,17 @@ function getTabIcon(
 }
 
 // -- Accessory helpers --
+
+const CONTAINER_COLORS: Record<string, Color> = {
+  blue: Color.Blue,
+  turquoise: Color.Blue,
+  green: Color.Green,
+  yellow: Color.Yellow,
+  orange: Color.Orange,
+  red: Color.Red,
+  pink: Color.Magenta,
+  purple: Color.Purple,
+};
 
 /**
  * Get the 1-based window number for a windowId given a sorted list of all window IDs.
@@ -227,7 +243,7 @@ function buildAccessories(
     accessories.push({
       tag: {
         value: tab.container.name,
-        color: tab.container.colorCode || Color.SecondaryText,
+        color: CONTAINER_COLORS[tab.container.color] || Color.SecondaryText,
       },
     });
   }
@@ -294,13 +310,15 @@ export default function SearchTabs() {
   useEffect(() => {
     if (!tabs || tabs.length === 0) return;
 
-    // Collect unique favIconUrls that we haven't fetched yet
+    // Collect unique http(s) favIconUrls that we haven't fetched yet.
+    // Data URIs are used directly by getTabIcon — no proxy needed.
     const urlsToFetch = [
       ...new Set(
         tabs
           .filter(
             (t) =>
               t.favIconUrl &&
+              !t.favIconUrl.startsWith("data:") &&
               !favicons[t.favIconUrl] &&
               !fetchedRef.current.has(t.favIconUrl),
           )
