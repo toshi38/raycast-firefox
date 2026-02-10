@@ -121,12 +121,11 @@ Plans:
   2. When the companion WebExtension is not installed, Raycast shows a message explaining how to install it
   3. When the native messaging host is not registered, Raycast shows a message explaining how to set it up
   4. Error states are detected automatically (user does not need to diagnose the issue themselves)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: Firefox process detection (pgrep or equivalent)
-- [ ] 07-02: Host connectivity check and WebExtension status detection
-- [ ] 07-03: EmptyView states with actionable messages for each failure mode
+- [ ] 07-01-PLAN.md -- Shared error utilities: FailureMode enum, classifyError, isFirefoxRunning, fetchWithRetry, showActionError
+- [ ] 07-02-PLAN.md -- Wire error handling into search-tabs.tsx: retry, ErrorEmptyView, action toasts + human verification
 
 ### Phase 8: Setup Automation
 **Goal**: Users can run a single Raycast command to register the native messaging host with Firefox
@@ -158,7 +157,7 @@ Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in par
 | 4. Tab Switching | 1/1 | Complete | 2026-02-08 |
 | 5. Tab List Polish | 3/3 | Complete | 2026-02-09 |
 | 6. Tab Close Action | 1/1 | Complete | 2026-02-10 |
-| 7. Error Handling | 0/3 | Not started | - |
+| 7. Error Handling | 0/2 | Not started | - |
 | 8. Setup Automation | 0/3 | Not started | - |
 
 ---
