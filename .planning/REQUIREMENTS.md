@@ -16,13 +16,13 @@
 
 - [x] **TABS-01**: User can search open Firefox tabs by title and URL via fuzzy matching
 - [x] **TABS-02**: Tab list displays URL as subtitle for each tab
-- [ ] **TABS-03**: Active tab is visually indicated in the list
-- [ ] **TABS-04**: Tab list displays favicon for each tab
+- [x] **TABS-03**: Active tab is visually indicated in the list
+- [x] **TABS-04**: Tab list displays favicon for each tab
 
 ### Tab Actions
 
 - [x] **ACTN-01**: User can switch to a selected tab (Firefox comes to front, tab activates)
-- [ ] **ACTN-02**: User can close a tab from Raycast without switching to it
+- [x] **ACTN-02**: User can close a tab from Raycast without switching to it
 
 ### Error Handling
 
@@ -71,10 +71,10 @@
 | COMM-04 | Phase 8 | Pending |
 | TABS-01 | Phase 3 | Complete |
 | TABS-02 | Phase 3 | Complete |
-| TABS-03 | Phase 5 | Pending |
-| TABS-04 | Phase 5 | Pending |
+| TABS-03 | Phase 5 | Complete |
+| TABS-04 | Phase 5 | Complete |
 | ACTN-01 | Phase 4 | Complete |
-| ACTN-02 | Phase 6 | Pending |
+| ACTN-02 | Phase 6 | Complete |
 | ERRH-01 | Phase 7 | Pending |
 | ERRH-02 | Phase 7 | Pending |
 | ERRH-03 | Phase 7 | Pending |
@@ -86,4 +86,4 @@
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-08 after Phase 4 completion*
+*Last updated: 2026-02-10 after Phase 6 completion*

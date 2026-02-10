@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 5 complete (Tab List Polish) -- Ready for Phase 6 (Tab Close Action)
+**Current focus:** Phase 6 complete (Tab Close Action) -- Ready for Phase 7 (Error Handling)
 
 ## Current Position
 
-Phase: 5 of 8 (Tab List Polish)
-Plan: 3 of 3 in current phase
+Phase: 6 of 8 (Tab Close Action)
+Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-02-09 -- Completed Phase 5 (all 3 plans)
+Last activity: 2026-02-10 -- Completed Phase 6 (1 plan)
 
-Progress: [███████████████████░░░] 11/22 (50%)
+Progress: [████████████████████░░] 12/22 (55%)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 6min
-- Total execution time: 1.0 hours
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [███████████████████░░░] 1
 | 03 Raycast Tab List | 2/2 | 5min | 2.5min |
 | 04 Tab Switching | 1/1 | 15min | 15min |
 | 05 Tab List Polish | 3/3 | 20min | 6.7min |
+| 06 Tab Close Action | 1/1 | 5min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (2min), 04-01 (15min), 05-01 (3min), 05-02 (1min), 05-03 (15min)
-- Trend: 05-03 took longer due to 3 bug fixes discovered during human verification
+- Last 5 plans: 04-01 (15min), 05-01 (3min), 05-02 (1min), 05-03 (15min), 06-01 (5min)
+- Trend: 06-01 was fast — simple vertical slice mirroring existing switch-tab pattern
 
 *Updated after each plan completion*
 
@@ -82,6 +83,10 @@ Recent decisions affecting current work:
 - 05-03: Firefox provides favicons as data: URIs -- use directly, skip native host proxy
 - 05-03: Map Firefox container color names to Raycast Color enum (colorCode property is null)
 - 05-03: Surrogate pair detection for emoji tab titles to avoid getAvatarIcon crash
+- 06-01: No osascript in handleCloseTab -- Firefox stays in background when closing tabs
+- 06-01: Optimistic removal via MutatePromise with default revalidation
+- 06-01: Action.Style.Destructive + Keyboard.Shortcut.Common.Remove (Ctrl+X) for close action
+- 06-01: No confirmation dialog for tab close (matches Firefox behavior)
 
 ### Pending Todos
 
@@ -94,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-09
-Stopped at: Phase 5 complete. All 3 plans executed and verified. Ready for Phase 6.
+Last session: 2026-02-10
+Stopped at: Phase 6 complete. 1 plan executed and verified. Ready for Phase 7.
 Resume file: None
