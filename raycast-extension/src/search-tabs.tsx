@@ -8,7 +8,6 @@ import {
   List,
   Toast,
   closeMainWindow,
-  showHUD,
   showToast,
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
@@ -279,10 +278,10 @@ async function switchTab(tabId: number, windowId: number) {
       const body = (await response
         .json()
         .catch(() => ({ error: "Unknown error" }))) as { error?: string };
-      await showHUD(`Switch failed: ${body.error ?? "Unknown error"}`);
+      throw new Error(body.error ?? `HTTP ${response.status}`);
     }
-  } catch {
-    await showHUD("Could not connect to Firefox");
+  } catch (error) {
+    await showActionError(error, "switch tab");
   }
 }
 
@@ -298,11 +297,19 @@ async function closeTab(
   });
   try {
     await mutate(
-      fetch(`http://127.0.0.1:${port}/close`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tabId }),
-      }),
+      (async () => {
+        const res = await fetch(`http://127.0.0.1:${port}/close`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tabId }),
+        });
+        if (!res.ok) {
+          const body = (await res
+            .json()
+            .catch(() => ({ error: "Unknown error" }))) as { error?: string };
+          throw new Error(body.error ?? `HTTP ${res.status}`);
+        }
+      })(),
       {
         optimisticUpdate(data) {
           return (data ?? []).filter((t) => t.id !== tabId);
@@ -311,10 +318,9 @@ async function closeTab(
     );
     toast.style = Toast.Style.Success;
     toast.title = "Tab closed";
-  } catch {
-    toast.style = Toast.Style.Failure;
-    toast.title = "Failed to close tab";
-    toast.message = "Could not connect to Firefox";
+  } catch (error) {
+    toast.hide();
+    await showActionError(error, "close tab");
   }
 }
 
