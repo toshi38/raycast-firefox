@@ -12,10 +12,18 @@ import {
   showToast,
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
+import { execFile } from "child_process";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { useEffect, useRef, useState } from "react";
+import {
+  type ClassifiedError,
+  FailureMode,
+  classifyError,
+  fetchWithRetry,
+  showActionError,
+} from "./lib/errors";
 
 // -- Types matching the native host HTTP API response --
 
@@ -322,7 +330,10 @@ async function fetchAllTabs(): Promise<Tab[]> {
     const res = await fetch(
       `http://127.0.0.1:${port}/tabs?offset=${allTabs.length}`,
     );
-    if (!res.ok) break;
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({ error: "Unknown error" }))) as { error?: string };
+      throw new Error(body.error ?? `HTTP ${res.status}`);
+    }
     const json = (await res.json()) as TabsResponse;
     const batch = json.data?.tabs ?? [];
     if (batch.length === 0) break;
@@ -334,10 +345,79 @@ async function fetchAllTabs(): Promise<Tab[]> {
   return allTabs;
 }
 
+// -- Error empty view --
+
+const ERROR_ICONS: Record<FailureMode, Icon> = {
+  [FailureMode.FirefoxNotRunning]: Icon.Globe,
+  [FailureMode.ExtensionNotInstalled]: Icon.Plug,
+  [FailureMode.HostNotRunning]: Icon.Terminal,
+  [FailureMode.Unknown]: Icon.ExclamationMark,
+};
+
+function ErrorEmptyView({
+  error,
+  revalidate,
+}: {
+  error: ClassifiedError;
+  revalidate: () => void;
+}) {
+  return (
+    <List.EmptyView
+      icon={ERROR_ICONS[error.mode]}
+      title={error.title}
+      description={error.description}
+      actions={
+        <ActionPanel>
+          {error.mode === FailureMode.FirefoxNotRunning && (
+            <Action
+              title="Launch Firefox"
+              icon={Icon.Globe}
+              onAction={() => {
+                execFile("open", ["-a", "Firefox"]);
+                setTimeout(revalidate, 2000);
+              }}
+            />
+          )}
+          {error.mode === FailureMode.ExtensionNotInstalled && (
+            <Action.OpenInBrowser
+              title="Install WebExtension"
+              url="https://addons.mozilla.org/en-US/firefox/addon/raycast-firefox/"
+            />
+          )}
+          {error.mode === FailureMode.HostNotRunning && (
+            <Action
+              title="Set Up Native Host"
+              icon={Icon.Terminal}
+              onAction={async () => {
+                await showToast({
+                  style: Toast.Style.Animated,
+                  title: "Run the setup command to register the native host",
+                });
+              }}
+            />
+          )}
+          <Action
+            title="Retry"
+            icon={Icon.ArrowClockwise}
+            shortcut={{ modifiers: ["cmd"], key: "r" }}
+            onAction={revalidate}
+          />
+        </ActionPanel>
+      }
+    />
+  );
+}
+
 // -- Component --
 
 export default function SearchTabs() {
-  const { data: tabs = [], isLoading, mutate } = usePromise(fetchAllTabs);
+  const {
+    data: tabs = [],
+    isLoading,
+    error,
+    revalidate,
+    mutate,
+  } = usePromise(() => fetchWithRetry(fetchAllTabs));
   const [favicons, setFavicons] = useState<Record<string, string>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
 
@@ -397,6 +477,9 @@ export default function SearchTabs() {
     });
   }, [tabs]);
 
+  // Classify error for EmptyView rendering (null when no error)
+  const classifiedError = error ? classifyError(error) : null;
+
   // Sort tabs by most recently accessed first
   const sortedTabs = [...tabs].sort(
     (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0),
@@ -409,6 +492,9 @@ export default function SearchTabs() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search Firefox tabs...">
+      {classifiedError && (
+        <ErrorEmptyView error={classifiedError} revalidate={revalidate} />
+      )}
       {sortedTabs.map((tab) => (
         <List.Item
           key={String(tab.id)}
