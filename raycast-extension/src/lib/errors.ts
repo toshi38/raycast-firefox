@@ -45,6 +45,16 @@ export function isFirefoxRunning(): boolean {
  * 3. Everything else -> Unknown
  */
 export function classifyError(error: unknown): ClassifiedError {
+  // Port file missing — host isn't serving. No pgrep needed (avoids race
+  // condition where Firefox process lingers briefly during shutdown).
+  if (error instanceof Error && error.message === "port-file-missing") {
+    return {
+      mode: FailureMode.FirefoxNotRunning,
+      title: "Firefox Isn't Running",
+      description: "Launch Firefox to see your tabs here",
+    };
+  }
+
   // Connection-level failure: host HTTP server is not reachable
   if (error instanceof TypeError && error.message === "fetch failed") {
     const cause = (error as TypeError & { cause?: { code?: string } }).cause;

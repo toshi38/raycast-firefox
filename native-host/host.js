@@ -55,14 +55,16 @@ process.stdin.on('data', decoder);
 
 process.stdin.on('end', () => {
   bridge.setNativeConnected(false);
-  logger.info('Firefox disconnected (stdin EOF)');
-  // Do NOT exit -- host stays alive for HTTP requests
+  lifecycle.cleanupPortFile();
+  logger.info('Firefox disconnected (stdin EOF), removed port file');
+  // Host stays alive but port file removal signals Raycast immediately
 });
 
 process.stdin.on('error', (err) => {
   bridge.setNativeConnected(false);
-  logger.error({ err: err.message }, 'Native messaging stdin error');
-  // Do NOT exit -- host stays alive for HTTP requests
+  lifecycle.cleanupPortFile();
+  logger.error({ err: err.message }, 'Native messaging stdin error, removed port file');
+  // Host stays alive but port file removal signals Raycast immediately
 });
 
 // -- Message handling --

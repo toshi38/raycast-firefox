@@ -12,10 +12,10 @@ import {
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
 import { execFile } from "child_process";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync, watch } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type ClassifiedError,
   FailureMode,
@@ -360,70 +360,64 @@ const ERROR_ICONS: Record<FailureMode, Icon> = {
   [FailureMode.Unknown]: Icon.ExclamationMark,
 };
 
-function ErrorEmptyView({
-  error,
-  revalidate,
-}: {
-  error: ClassifiedError;
-  revalidate: () => void;
-}) {
-  return (
-    <List.EmptyView
-      icon={ERROR_ICONS[error.mode]}
-      title={error.title}
-      description={error.description}
-      actions={
-        <ActionPanel>
-          {error.mode === FailureMode.FirefoxNotRunning && (
-            <Action
-              title="Launch Firefox"
-              icon={Icon.Globe}
-              onAction={() => {
-                execFile("open", ["-a", "Firefox"]);
-                setTimeout(revalidate, 2000);
-              }}
-            />
-          )}
-          {error.mode === FailureMode.ExtensionNotInstalled && (
-            <Action.OpenInBrowser
-              title="Install WebExtension"
-              url="https://addons.mozilla.org/en-US/firefox/addon/raycast-firefox/"
-            />
-          )}
-          {error.mode === FailureMode.HostNotRunning && (
-            <Action
-              title="Set Up Native Host"
-              icon={Icon.Terminal}
-              onAction={async () => {
-                await showToast({
-                  style: Toast.Style.Animated,
-                  title: "Run the setup command to register the native host",
-                });
-              }}
-            />
-          )}
-          <Action
-            title="Retry"
-            icon={Icon.ArrowClockwise}
-            shortcut={{ modifiers: ["cmd"], key: "r" }}
-            onAction={revalidate}
-          />
-        </ActionPanel>
-      }
-    />
-  );
-}
-
 // -- Component --
 
 export default function SearchTabs() {
+  const [classifiedError, setClassifiedError] =
+    useState<ClassifiedError | null>(null);
+
+  const handleError = useCallback((error: Error) => {
+    setClassifiedError(classifyError(error));
+  }, []);
+
+  const handleData = useCallback(() => {
+    setClassifiedError(null);
+  }, []);
+
   const {
     data: tabs = [],
     isLoading,
-    error,
     revalidate,
     mutate,
-  } = usePromise(() => fetchWithRetry(fetchAllTabs));
+  } = usePromise(() => {
+    // Fast-fail: if port file is gone, no host is listening — skip retries.
+    // Use a distinct error message so classifyError skips pgrep (avoids
+    // race condition during Firefox shutdown where process lingers briefly).
+    const portPath = join(homedir(), ".raycast-firefox", "port");
+    if (!existsSync(portPath)) {
+      return Promise.reject(new Error("port-file-missing"));
+    }
+    return fetchWithRetry(fetchAllTabs);
+  }, [], {
+    onError: handleError,
+    onData: handleData,
+  });
+  // Watch ~/.raycast-firefox/port for changes. The native host writes this
+  // file on startup and removes it when Firefox disconnects (stdin EOF).
+  // This gives instant push-based detection of both transitions:
+  //   host starts  → port file created  → revalidate → tabs load
+  //   Firefox quits → port file removed → revalidate → error shown
+  useEffect(() => {
+    const dir = join(homedir(), ".raycast-firefox");
+    try {
+      const watcher = watch(dir, (_event, filename) => {
+        if (filename === "port") {
+          const portPath = join(dir, "port");
+          if (existsSync(portPath)) {
+            // Port file created — host just started
+            setTimeout(revalidate, 500);
+          } else {
+            // Port file removed — Firefox disconnected
+            setTimeout(revalidate, 500);
+          }
+        }
+      });
+      return () => watcher.close();
+    } catch {
+      // Directory doesn't exist yet — user needs manual setup
+    }
+  }, [revalidate]);
+
   const [favicons, setFavicons] = useState<Record<string, string>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
 
@@ -483,9 +477,6 @@ export default function SearchTabs() {
     });
   }, [tabs]);
 
-  // Classify error for EmptyView rendering (null when no error)
-  const classifiedError = error ? classifyError(error) : null;
-
   // Sort tabs by most recently accessed first
   const sortedTabs = [...tabs].sort(
     (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0),
@@ -498,9 +489,52 @@ export default function SearchTabs() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search Firefox tabs...">
-      {classifiedError && (
-        <ErrorEmptyView error={classifiedError} revalidate={revalidate} />
-      )}
+      <List.EmptyView
+        icon={classifiedError ? ERROR_ICONS[classifiedError.mode] : Icon.MagnifyingGlass}
+        title={classifiedError ? classifiedError.title : "No Results"}
+        description={classifiedError?.description}
+        actions={
+          classifiedError ? (
+            <ActionPanel>
+              {classifiedError.mode === FailureMode.FirefoxNotRunning && (
+                <Action
+                  title="Launch Firefox"
+                  icon={Icon.Globe}
+                  onAction={() => {
+                    execFile("open", ["-a", "Firefox"]);
+                    setTimeout(revalidate, 2000);
+                  }}
+                />
+              )}
+              {classifiedError.mode === FailureMode.ExtensionNotInstalled && (
+                <Action.OpenInBrowser
+                  title="Install WebExtension"
+                  url="https://addons.mozilla.org/en-US/firefox/addon/raycast-firefox/"
+                />
+              )}
+              {classifiedError.mode === FailureMode.HostNotRunning && (
+                <Action
+                  title="Set Up Native Host"
+                  icon={Icon.Terminal}
+                  onAction={async () => {
+                    await showToast({
+                      style: Toast.Style.Failure,
+                      title: "Setup Not Available Yet",
+                      message: "Install the companion extension in Firefox and register the native host manually",
+                    });
+                  }}
+                />
+              )}
+              <Action
+                title="Retry"
+                icon={Icon.ArrowClockwise}
+                shortcut={{ modifiers: ["cmd"], key: "r" }}
+                onAction={revalidate}
+              />
+            </ActionPanel>
+          ) : undefined
+        }
+      />
       {sortedTabs.map((tab) => (
         <List.Item
           key={String(tab.id)}
