@@ -1,283 +1,253 @@
-# Features Research: Browser-Control Raycast Extensions
+# Feature Landscape
 
-> Research date: 2026-02-06
-> Purpose: Understand the feature landscape of existing browser-control Raycast extensions to inform requirements for raycast-firefox.
+**Domain:** Store publishing, native host distribution, and automated install for a multi-component browser integration (Raycast extension + Firefox WebExtension + Node.js native messaging host)
+**Researched:** 2026-02-24
+**Milestone:** v1.1 Store Publishing & Distribution
 
----
+## Context
 
-## 1. Existing Extensions Surveyed
+This research focuses exclusively on v1.1 features. The following are already built and working (v1.0):
+- Fuzzy tab search by title and URL
+- Tab switching with close-first pattern
+- Tab closing with optimistic removal
+- Favicons from Firefox data URIs, active tab indicator, container colors
+- Three-branch error classification with recovery actions
+- "Setup Firefox Bridge" command (manifest registration from local project path)
 
-### Official / High-Quality Extensions
-
-| Extension | Author | Browser | Installs | Notes |
-|-----------|--------|---------|----------|-------|
-| **Safari** | Raycast (official) | Safari | Very high | Gold standard; deepest OS integration |
-| **Google Chrome** | Raycast (community) | Chrome | Very high | Chromium baseline; uses AppleScript |
-| **Arc** | Thomas Paul Mann / community | Arc | High | Arc-specific features (spaces, boosts) |
-| **Brave** | community | Brave | Medium | Chrome-based, similar commands |
-| **Vivaldi** | community | Vivaldi | Low | Chrome-based |
-
-### Existing Firefox Extensions
-
-| Extension | Author | Key Limitation |
-|-----------|--------|---------------|
-| **Search Firefox** | nicholasxjy | Reads SQLite DB directly (places.sqlite); read-only; cannot switch tabs or control browser |
-| **Firefox** | kud | Uses AppleScript (limited Firefox support); basic tab listing |
-
-**Key insight**: No existing Firefox extension has full tab switching + search. This is our core opportunity.
+The v1.1 challenge: the current architecture assumes all three components live together on disk from a git clone. Store distribution breaks this assumption -- the Raycast extension gets installed by Raycast, the Firefox extension gets installed from AMO, and the native host needs to be distributed independently.
 
 ---
 
-## 2. Feature Inventory Across Extensions
+## Table Stakes
 
-### 2.1 Tab Management
+Features users expect. Missing = product feels incomplete or unusable for public distribution.
 
-| Feature | Safari | Chrome | Arc | Brave | Firefox (existing) |
-|---------|--------|--------|-----|-------|-------------------|
-| Search open tabs (title + URL) | Yes | Yes | Yes | Yes | Partial (kud) |
-| Switch to tab (activate + focus) | Yes | Yes | Yes | Yes | No |
-| Close tab | Yes | Yes | Yes | Yes | No |
-| Close other tabs | Yes | No | No | No | No |
-| Open new tab | Yes | Yes | Yes | Yes | No |
-| Open new tab with URL | Yes | Yes | Yes | Yes | No |
-| Duplicate tab | No | No | Yes | No | No |
-| Pin/unpin tab | No | No | Yes | No | No |
-| Move tab between windows | No | No | No | No | No |
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| **Raycast Store listing** | Users discover extensions through the Store; unlisted = invisible | Medium | Icon, README, screenshots, CHANGELOG, MIT license, PR to raycast/extensions | PR-based workflow via `npm run publish`; reviewed by Raycast team (1-3 day turnaround per round) |
+| **Firefox AMO listing** | Users discover Firefox add-ons through AMO; sideloading requires manual XPI install and disabling signature checks | Medium | Icon (48x48, 96x96 -- already present), description, categories, screenshots (1280x800) | Immediately available on AMO after submission; human review follows. MV2 still fully accepted -- Mozilla confirmed indefinite MV2 support (Feb 2025) |
+| **Automated native host install from Raycast** | Users should not have to clone a repo and run shell scripts; companion binary must "just work" | High | Bundled native host on GitHub Releases, download + hash verification in Raycast extension | This is the core distribution problem. Current setup assumes native-host/ lives on disk next to the Raycast extension. Store distribution breaks this assumption entirely |
+| **README with setup instructions** | Raycast Store requires README for extensions needing additional setup; AMO users need setup guidance too | Low | None (content only) | Raycast shows "About This Extension" button linking to README. AMO has a description field. Both need clear cross-linking |
+| **512x512 custom icon (Raycast)** | Raycast rejects submissions using the default icon | Low | Design asset | Must look good in light and dark themes. Use icon.ray.so generator or custom design. Current `icon.png` exists but needs size verification |
+| **Store screenshots** | Raycast requires minimum 1 screenshot in `metadata/` folder (2000x1250 PNG). AMO recommends screenshots (1280x800) | Low | Running extension for capture | Show tab search, tab switching, setup flow. Recommend 3+ for Raycast |
+| **CHANGELOG.md** | Raycast Store uses this for version history display | Low | None | Format: `## [Description] - {PR_MERGE_DATE}` |
+| **Cross-linking between stores** | Users who find the Firefox extension need to find Raycast, and vice versa | Low | Both listings published | AMO description links to Raycast Store page; Raycast README links to AMO listing |
+| **MIT license** | Raycast Store mandates MIT license | Low | Already present | Verify license file is in the extension root |
+| **`platforms` field in package.json** | Raycast requires this for platform-specific extensions | Low | None | Add `["macOS"]` -- Raycast is macOS-only |
 
-### 2.2 Bookmarks
+## Differentiators
 
-| Feature | Safari | Chrome | Arc | Brave | Firefox (existing) |
-|---------|--------|--------|-----|-------|-------------------|
-| Search bookmarks | Yes | Yes | No | Yes | Yes (nicholasxjy; SQLite) |
-| Open bookmark | Yes | Yes | No | Yes | Partial (opens URL) |
-| Add bookmark | No | No | No | No | No |
-| Delete bookmark | No | No | No | No | No |
-| Bookmark folders | Yes | Yes | No | Yes | Yes |
+Features that set the product apart. Not expected, but valued by users.
 
-### 2.3 History
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **One-click native host install** | Most native messaging extensions require multi-step manual setup (download binary, move to path, register manifest). A single Raycast command that downloads + installs + verifies is genuinely rare | High | Bundled host on GitHub Releases, download logic with hash verification, manifest registration | The existing `setup-bridge` command already does manifest registration. Needs extension to download the binary first |
+| **Chain verification after setup** | After install, automatically verify the entire chain (binary exists, host reachable, Firefox extension connected) and report specific failures | Low | Already implemented in v1.0 `verifyChain()` | Just needs minor adaptation to work with downloaded bundle path instead of project-relative path |
+| **Standalone native host bundle (no scattered files)** | Users get a self-contained bundle instead of needing to clone a git repo with node_modules | Medium | `@vercel/ncc` to bundle JS into single file | Bundles host.js + 7 source files + pino + pino-roll into one file. Shell wrapper (`run.sh`) still discovers Node.js |
+| **CI-built release artifacts** | GitHub Actions automatically builds and publishes the native host bundle on git tag/release, ensuring reproducible builds | Medium | GitHub Actions workflow, test + bundle + release jobs | Build on push of `v*` tag. Upload bundle + SHA256 hash as release assets |
+| **Guided error recovery linking to missing piece** | When the Raycast extension detects a missing component, it directs the user exactly where to get it (AMO link for Firefox extension, setup command for native host) | Low | Both store listings published | Build on existing three-branch error classification. Add specific URLs in error messages |
+| **AMO submission automation via web-ext** | Use `web-ext sign --channel=listed` in CI to automate Firefox extension updates | Medium | AMO API credentials as GitHub Secrets | First submission must be manual (metadata entry on AMO web UI). Subsequent versions can use `web-ext sign` |
 
-| Feature | Safari | Chrome | Arc | Brave | Firefox (existing) |
-|---------|--------|--------|-----|-------|-------------------|
-| Search history | Yes | Yes | No | Yes | Yes (nicholasxjy; SQLite) |
-| Open history item | Yes | Yes | No | Yes | Yes |
-| Clear history | No | No | No | No | No |
+## Anti-Features
 
-### 2.4 Reading List (Safari-specific)
+Features to explicitly NOT build.
 
-| Feature | Safari | Chrome | Arc | Brave | Firefox (existing) |
-|---------|--------|--------|-----|-------|-------------------|
-| Search reading list | Yes | N/A | N/A | N/A | N/A |
-| Add to reading list | Yes | N/A | N/A | N/A | N/A |
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Auto-update native host binary** | Silent background updates to executables are a security concern and add significant complexity (update server, rollback, corruption recovery). Raycast reviewers scrutinize binary downloads closely | Prompt user to re-run setup command when version mismatch detected. Link to GitHub Releases for transparency |
+| **Bundling native host inside Raycast extension** | Raycast guidelines explicitly prohibit bundling heavy or opaque binaries. Binary must be downloaded from a trusted source with hash verification | Download from GitHub Releases on first use or via setup command |
+| **Self-hosted binary download server** | Raycast Store will reject extensions that download binaries from custom/personal servers. Must use established hosting | Use GitHub Releases (Raycast-approved pattern, same as Bitwarden CLI extension) |
+| **Universal XPI installer** | Building an AMO-bypassing installer for the Firefox extension adds complexity and security risk. Users sideloading XPIs must disable signature checking | List on AMO (free) and link to the AMO listing. Let Mozilla handle signing and distribution |
+| **Windows/Linux support** | Raycast is macOS-only. Adding cross-platform support for the native host adds complexity with zero benefit | Explicitly document macOS-only. Set `platforms: ["macOS"]` in Raycast package.json |
+| **Homebrew formula** | Distribution channel fragmentation. Users would need to discover and use Homebrew separately from the Raycast Store flow | Keep distribution self-contained: Raycast Store install triggers native host download from GitHub Releases |
+| **Notarization/code signing of native host** | Apple notarization requires a paid developer account ($99/yr) and adds CI complexity. The native host runs as a shell script + Node.js -- no Gatekeeper interception for non-app bundles | If Gatekeeper blocks, document `xattr -d com.apple.quarantine` workaround. But this is unlikely since we ship JS + shell script, not a compiled binary |
+| **Node.js SEA standalone binary (for now)** | Produces a ~60MB binary (embeds full Node.js runtime). Download size hurts UX. macOS Gatekeeper may quarantine unsigned binaries. SEA is stable but macOS edge cases are less documented | Use `@vercel/ncc` bundle (~200KB) + shell wrapper that discovers Node.js. Most Raycast users (developers) have Node.js. Revisit if user feedback shows Node.js availability is a real problem |
+| **Version compatibility enforcement** | Blocking the extension when versions are slightly mismatched is overly aggressive for a v1.1 release | Log version mismatches. Show a non-blocking warning toast if native host version is very old. Don't block functionality |
 
-### 2.5 Window Management
-
-| Feature | Safari | Chrome | Arc | Brave | Firefox (existing) |
-|---------|--------|--------|-----|-------|-------------------|
-| New window | Yes | Yes | Yes | Yes | No |
-| New incognito/private window | Yes | Yes | No | Yes | No |
-| List windows | Implicit | Implicit | Yes | Implicit | No |
-
-### 2.6 Navigation & Page Actions
-
-| Feature | Safari | Chrome | Arc | Brave | Firefox (existing) |
-|---------|--------|--------|-----|-------|-------------------|
-| Copy current tab URL | Yes | Yes | Yes | Yes | No |
-| Copy tab title + URL | Yes | Yes | Yes | Yes | No |
-| Copy as Markdown link | Yes | Yes | Yes | No | No |
-| Reload tab | No | No | Yes | No | No |
-
-### 2.7 Browser-Specific Features
-
-| Feature | Browser | Description |
-|---------|---------|-------------|
-| Spaces | Arc | Search/switch Arc spaces |
-| Boosts | Arc | Manage Arc boosts |
-| Profiles | Chrome/Brave | Switch between browser profiles |
-| Sidebar items | Arc | List and open sidebar items |
-| Little Arc | Arc | Open URL in Arc mini-window |
-| Tab Groups | Chrome | Search within tab groups |
-
----
-
-## 3. Communication Mechanisms
-
-Understanding how each extension talks to its browser is critical for Firefox:
-
-| Browser | Primary Mechanism | Fallback | Notes |
-|---------|------------------|----------|-------|
-| Safari | AppleScript (native) | SQLite (bookmarks/history) | Best macOS integration; System Events API |
-| Chrome | AppleScript | SQLite (history/bookmarks) | Good AppleScript support via "tell application" |
-| Arc | AppleScript | Arc-specific APIs | Custom AppleScript dictionary |
-| Brave | AppleScript | SQLite | Same as Chrome (Chromium-based) |
-| Firefox (existing) | SQLite (places.sqlite) | AppleScript (very limited) | Firefox has minimal AppleScript support; no tab control via AppleScript |
-
-**Firefox challenge**: Firefox's AppleScript dictionary is extremely limited (basically just `open location`). No ability to list tabs, switch tabs, or query state via AppleScript. This is the core technical challenge.
-
-**Possible Firefox approaches**:
-1. **Native Messaging + WebExtension**: Build a Firefox WebExtension that exposes tab data via Native Messaging protocol to a local process. The Raycast extension communicates with that process.
-2. **Firefox Remote Debugging Protocol (CDP-like)**: Firefox supports a remote debugging protocol on a local port. Could query tabs this way.
-3. **Accessibility API (macOS)**: Use macOS Accessibility APIs to read tab titles from the Firefox window. Fragile but no Firefox extension needed.
-4. **SQLite for read-only data**: Bookmarks and history can be read from `places.sqlite` (like existing extensions do). But this does NOT include open tabs.
-5. **sessionstore.jsonlz4**: Firefox stores session data (including open tabs) in a compressed file. Can be read but is a snapshot, not live.
-
----
-
-## 4. Feature Classification for raycast-firefox
-
-### TABLE STAKES (Must have or users will not adopt)
-
-These features are present in every major browser extension and define the minimum viable product:
-
-| # | Feature | Complexity | Dependencies | Rationale |
-|---|---------|-----------|--------------|-----------|
-| T1 | **Search open tabs by title and URL** | Medium | Communication layer (Firefox <-> Raycast) | Core value proposition; every browser extension has this |
-| T2 | **Switch to selected tab** (focus Firefox window + activate tab) | Medium | T1, communication layer | Useless to search without switching; every extension does this |
-| T3 | **Fuzzy matching** on search | Low | T1 | Raycast provides this via `<List>` component; users expect it |
-| T4 | **Show favicon** for each tab | Low | T1, favicon access | Visual polish; all major extensions show favicons |
-| T5 | **Show tab URL as subtitle/accessory** | Low | T1 | Standard UX pattern across all browser extensions |
-| T6 | **Open new tab with URL** | Low | Communication layer | Basic browser control; all extensions have this |
-| T7 | **Copy current tab URL** | Low | Communication layer | Extremely common action; Safari/Chrome/Arc all have it |
-
-### DIFFERENTIATORS (Competitive advantage over existing Firefox extensions)
-
-These features would make raycast-firefox clearly better than the existing Firefox extensions:
-
-| # | Feature | Complexity | Dependencies | Rationale |
-|---|---------|-----------|--------------|-----------|
-| D1 | **Close tab from Raycast** | Low | Communication layer | Existing Firefox extensions cannot do this |
-| D2 | **Search bookmarks** | Medium | SQLite access OR WebExtension | nicholasxjy does this via SQLite; we should match it |
-| D3 | **Search history** | Medium | SQLite access | nicholasxjy does this via SQLite; we should match it |
-| D4 | **Copy URL as Markdown link** | Low | T7 | Nice productivity feature; Safari and Chrome have it |
-| D5 | **Multiple window support** (show which window a tab is in) | Medium | Communication layer | Good UX when user has many windows |
-| D6 | **Open new private window** | Low | Communication layer | Common feature in Chrome/Brave extensions |
-| D7 | **Tab preview** (show page title, URL, maybe screenshot) | Medium | Communication layer | Helps identify tabs with similar titles |
-| D8 | **Quicklink support** (deeplinks for specific actions) | Low | Raycast API | Lets users create shortcuts to specific browser actions |
-
-### NICE TO HAVE (v2+ features, not critical for launch)
-
-| # | Feature | Complexity | Dependencies | Rationale |
-|---|---------|-----------|--------------|-----------|
-| N1 | **Tab groups / containers** | High | WebExtension with container API | Firefox Container Tabs are unique; could be differentiating |
-| N2 | **Recently closed tabs** | Medium | Communication layer or sessionstore | Useful recovery feature |
-| N3 | **Pin/unpin tab** | Low | Communication layer | Arc has this; low value for most users |
-| N4 | **Reload tab** | Low | Communication layer | Arc has this; niche utility |
-| N5 | **Multiple profile support** | High | Profile detection + per-profile communication | Chrome/Brave have this; Firefox has profiles too |
-| N6 | **Reading list integration** | Medium | WebExtension or Pocket API | Firefox has Pocket built in; could integrate |
-
-### ANTI-FEATURES (Deliberately do NOT build)
-
-| # | Feature | Rationale |
-|---|---------|-----------|
-| A1 | **Modify bookmarks** (add/delete/edit) | No browser extension does this; high risk, low value. Read-only is sufficient. |
-| A2 | **Clear history** | Destructive action; too dangerous for a quick-launch tool |
-| A3 | **Full browser automation** (fill forms, click buttons, etc.) | Out of scope; that's Puppeteer/Playwright territory |
-| A4 | **Cross-browser support** | Scope creep; focus on Firefox excellence |
-| A5 | **Sync/cloud features** | Privacy constraint from PROJECT.md; all data stays local |
-| A6 | **Tab content search** (search within page text) | Extremely complex; requires indexing page content; poor ROI |
-| A7 | **Move tabs between windows** | No browser extension does this well; complex edge cases |
-| A8 | **Automatic tab management** (auto-close stale tabs, auto-group) | Opinionated behavior that users don't expect from a Raycast extension |
-
----
-
-## 5. Dependency Graph
+## Feature Dependencies
 
 ```
-Communication Layer (CRITICAL PATH)
-├── Tab Data Access (T1)
-│   ├── Search open tabs (T1)
-│   ├── Show favicon (T4)
-│   ├── Show URL as subtitle (T5)
-│   └── Fuzzy matching (T3) — provided by Raycast List component
-├── Tab Control
-│   ├── Switch to tab (T2) — depends on T1
-│   ├── Close tab (D1) — depends on T1
-│   ├── Open new tab (T6)
-│   └── Open private window (D6)
-├── Page Info Access
-│   ├── Copy URL (T7)
-│   └── Copy as Markdown (D4) — depends on T7
-└── Window Awareness (D5)
-
-SQLite Access (INDEPENDENT PATH)
-├── Bookmark search (D2)
-├── History search (D3)
-└── Recently closed tabs (N2) — partial, from sessionstore
-
-No Dependencies (Raycast-only)
-├── Quicklink support (D8)
-└── Fuzzy matching (T3)
+AMO Listing (independent) ──────────────────────────────────┐
+                                                            │
+Native Host Bundle ──> GitHub Actions CI ──> Download       │
+  (@vercel/ncc)          (build + release)   Logic in       │
+                                             Raycast ──> Cross-linking ──> Raycast Store Listing
+                                             Extension      │                (PR submission)
+                                               ^            │
+                                               |            │
+Existing setup-bridge ─── Refactor to ─────────┘            │
+command (v1.0)             support downloaded                │
+                           bundle path                      │
+                                                            │
+README + Icon + Screenshots ────────────────────────────────┘
 ```
 
----
+Key dependency chains:
 
-## 6. Complexity Analysis
+1. **Native host must be bundleable** before CI can build it
+2. **CI must produce release artifacts** before Raycast extension can download them
+3. **Download logic must work** before Raycast Store submission (reviewers will test it)
+4. **Both store listings must exist** before cross-linking works fully
+5. **AMO listing can be submitted independently** -- no dependency on Raycast side
+6. **README, icon, and screenshots** are needed for both store submissions
+7. **Refactoring setup-bridge** to use downloaded path instead of project-root.txt is the key code change
 
-### The Core Technical Risk: Communication Layer
+## Detailed Feature Analysis
 
-The single biggest differentiator between "works great" and "doesn't work" is the communication mechanism between Raycast and Firefox.
+### Native Host Bundling Strategy
 
-**Recommended approach: Native Messaging + Firefox WebExtension**
+The native host is a Node.js application (`host.js` + 7 source files in `src/`) with two runtime dependencies: `pino` (logging) and `pino-roll` (log rotation). Current execution requires Node.js on the user's machine, found via `run.sh` PATH probing across common install locations (Homebrew Intel/ARM, nvm, system PATH).
 
-| Approach | Pros | Cons | Verdict |
-|----------|------|------|---------|
-| **Native Messaging + WebExtension** | Full tab API access; can list, switch, close tabs; real-time data; officially supported | Requires user to install a Firefox extension; two-part installation | **Best option** for full control |
-| **Firefox Remote Protocol** | No extension needed; programmatic access | Requires user to enable remote debugging (security concern); protocol is unstable | Risky for end users |
-| **Accessibility API** | No Firefox extension needed | Fragile; can't get URLs; can't control tabs; breaks with UI changes | Insufficient |
-| **sessionstore.jsonlz4** | No extension needed; gets open tab data | Read-only snapshot; can't switch tabs; file locked while Firefox running | Insufficient for tab switching |
-| **AppleScript** | Standard macOS approach | Firefox AppleScript dictionary is nearly empty; can only `open location` | Insufficient |
-| **Hybrid: SQLite + Native Messaging** | SQLite for bookmarks/history (proven); Native Messaging for tabs (full control) | Still requires WebExtension for tab features | **Recommended composite** |
+**Recommended approach: `@vercel/ncc` bundle + shell wrapper**
 
-### Complexity Ratings
+| Aspect | Details |
+|--------|---------|
+| Tool | `@vercel/ncc` -- compiles Node.js project into a single file |
+| Output | Single `index.js` (~200KB) bundling all source + dependencies |
+| Runner | Modified `run.sh` that finds Node.js and runs `index.js` |
+| Node.js required | Yes -- but `run.sh` already handles discovery reliably |
+| CI build | `ncc build host.js -o dist` |
+| Release artifact | Tarball containing `dist/index.js` + `run.sh` |
+| Download size | ~200KB compressed |
+| Install location | `~/.raycast-firefox/native-host/` |
 
-| Rating | Meaning | Examples |
-|--------|---------|---------|
-| **Low** | < 1 day; uses existing Raycast APIs or simple data transforms | Copy URL, fuzzy search UI, open new tab |
-| **Medium** | 1-3 days; requires integration work or non-trivial logic | SQLite reading, tab list rendering with favicons, window grouping |
-| **High** | 3+ days; requires significant architecture or research | Communication layer, Native Messaging setup, container tab support |
-| **Critical** | Blocking; must be solved before any other feature works | Communication layer design and implementation |
+Why not SEA: A Node.js Single Executable Application would produce a ~60MB binary that eliminates the Node.js dependency. However, the download size is 300x larger, Gatekeeper may quarantine unsigned binaries on macOS, and most Raycast users are developers who have Node.js. The `@vercel/ncc` approach is the pragmatic choice. If Node.js availability becomes a real user complaint post-launch, SEA can be adopted later without changing the install flow.
 
----
+### Raycast Store Submission Checklist
 
-## 7. Recommended MVP Feature Set (v1)
+| Requirement | Current State | Action Needed |
+|-------------|---------------|---------------|
+| MIT license | Present in repo root | Copy to/verify in `raycast-extension/` root |
+| Custom 512x512 icon | `icon.png` exists (unverified dimensions) | Verify 512x512 PNG, ensure light/dark compatibility |
+| README.md | Not present in `raycast-extension/` root | Write: what it does, setup steps, AMO link, requirements |
+| CHANGELOG.md | Not present | Write with initial version entry |
+| `metadata/` screenshots | Directory not present | Capture 3+ screenshots at 2000x1250 PNG |
+| `package-lock.json` | Present | Already good |
+| `npm run build` passes | Yes | Already good |
+| `npm run lint` passes | Needs verification | Run and fix issues |
+| No Keychain access | Correct | Already good |
+| Binary from trusted source with hash | N/A currently | GitHub Releases download with SHA256 verification |
+| `platforms` field | Not set | Add `["macOS"]` to package.json |
+| Categories | `["Applications", "Productivity"]` | Already set, already good |
+| US English only | Yes | Already good |
+| Author matches Raycast username | `"stelau"` | Verify matches Raycast account |
+| Title case naming | "Firefox Tabs" / "Search Firefox Tabs" | Already good |
+| Preferences API for config | No preferences currently | Consider: custom native host path preference for advanced users |
 
-Based on this analysis, the minimum viable extension is:
+### Firefox AMO Submission Checklist
 
-1. **T1** - Search open tabs (title + URL)
-2. **T2** - Switch to selected tab
-3. **T3** - Fuzzy matching (free via Raycast)
-4. **T4** - Show favicon
-5. **T5** - Show URL as subtitle
-6. **T7** - Copy current tab URL (action)
-7. **D1** - Close tab (action, since we have the communication layer anyway)
+| Requirement | Current State | Action Needed |
+|-------------|---------------|---------------|
+| Packaged as .zip/.xpi | Not packaged | Add `web-ext build` command or manual zip |
+| Icons (48x48, 96x96) | Present in `extension/icons/` | Already good |
+| `browser_specific_settings` with gecko ID | Present: `raycast-firefox@lau.engineering` | Already good |
+| Name | "Raycast Firefox" | Already good |
+| Summary (250 chars max) | Needs writing | Draft: "Companion extension for Raycast Firefox Tabs. Enables tab search and switching from Raycast." |
+| Description | Needs writing | Include: what it does, link to Raycast Store, setup instructions |
+| Screenshots (1280x800) | Not created | Capture showing the extension is a companion (no visible UI -- it's a background extension) |
+| Categories (up to 2) | Not selected | "Tabs" primary |
+| License | Not specified for AMO | Select MIT (matching Raycast side) |
+| Source code submission | Unminified JS, no build step | Already good -- source is directly readable |
+| Privacy policy | Not needed | All communication is localhost-only, no external data transmission |
+| `web-ext` tooling | Not installed | Add as devDependency: `npm install -D web-ext` |
+| AMO API credentials | Not created | Generate at addons.mozilla.org/developers/addon/api/key/ |
 
-**Total complexity**: 1 Critical (communication layer) + 1 Medium (tab data UI) + several Low
+### Automated Install Flow (User Experience)
 
-### v1.1 (Quick wins after MVP)
-- **T6** - Open new tab with URL
-- **D4** - Copy as Markdown link
-- **D6** - Open private window
+**Target first-time user journey:**
 
-### v2 (Significant new capability)
-- **D2** - Bookmark search (SQLite path, independent of communication layer)
-- **D3** - History search (SQLite path)
-- **D5** - Window awareness
+1. User finds "Firefox Tabs" in Raycast Store, clicks Install
+2. User opens "Search Firefox Tabs" command
+3. Extension detects native host not installed (no bundle at `~/.raycast-firefox/native-host/`)
+4. Error view: "Native host not installed" with "Set Up Firefox Bridge" action button
+5. User clicks action -- setup command runs:
+   a. Shows progress toast: "Downloading native host..."
+   b. Downloads bundle tarball from GitHub Releases (latest)
+   c. Verifies SHA256 hash
+   d. Extracts to `~/.raycast-firefox/native-host/`
+   e. Makes `run.sh` executable
+   f. Writes native messaging manifest pointing to `~/.raycast-firefox/native-host/run.sh`
+   g. Validates manifest
+6. Setup reports: "Manifest installed. Install the companion Firefox extension" with link to AMO
+7. User installs Firefox extension from AMO
+8. Next time user runs "Search Firefox Tabs" -- it works
 
----
+**Key UX decisions:**
+- Install location: `~/.raycast-firefox/native-host/` (dot-directory, alongside existing `port` and `pid` files)
+- Progress: Animated toast during download
+- Failure recovery: Specific error messages -- "Download failed (check internet connection)", "Hash mismatch (try again)", "Firefox not installed"
+- Idempotent: Re-running always downloads latest, overwrites existing bundle
+- Offline resilience: If bundle already downloaded, skip download and just re-register manifest
 
-## 8. Key Insights
+### CI/CD Pipeline (GitHub Actions)
 
-1. **No existing Firefox extension can switch tabs.** This is the fundamental gap. The existing "Search Firefox" extension by nicholasxjy only reads SQLite for bookmarks/history. The "Firefox" extension by kud attempts AppleScript but it's severely limited. Our extension filling this gap is the core value proposition.
+**Trigger:** Push of tag matching `v*`
 
-2. **The communication layer is the entire technical risk.** Every other feature is straightforward Raycast API usage. Solve the communication layer and everything else falls into place.
+**Jobs:**
 
-3. **SQLite is proven for read-only data.** Bookmarks and history can reliably be read from Firefox's `places.sqlite`. This is how existing extensions work. We should use this for v2 features.
+1. **Build native host bundle**
+   - Checkout repo
+   - `cd native-host && npm ci`
+   - `npx @vercel/ncc build host.js -o dist`
+   - Verify `dist/index.js` exists
+   - Package: tarball with `dist/index.js` + `run.sh`
+   - Generate SHA256 hash file
 
-4. **Safari sets the bar, but Chrome is the realistic target.** Safari has the deepest integration due to native macOS APIs. Chrome has a good AppleScript dictionary. Our Firefox extension should aim for Chrome-level feature parity, with the understanding that our communication mechanism will be different.
+2. **Create GitHub Release**
+   - Create release from tag
+   - Upload tarball + hash as release assets
+   - Auto-generate release notes from commits
 
-5. **Favicons matter more than you'd think.** Every polished browser extension shows favicons. They make the tab list scannable. Worth investing in from day one.
+3. **(Future) AMO submission**
+   - `web-ext build` the Firefox extension
+   - `web-ext sign --channel=listed` with API credentials
+   - First version: manual submission through AMO web UI
 
-6. **Action menu patterns are consistent.** All browser extensions use a similar action menu: primary action is "switch to tab", secondary actions include copy URL, copy as markdown, close tab, open new tab. We should follow this convention.
+4. **(Future) Raycast Store PR**
+   - Trigger `npm run publish` or manual PR to raycast/extensions
+   - Requires human review regardless
 
----
+### Path Resolution Refactoring
 
-*This research feeds into requirements definition. See PROJECT.md for scope decisions.*
+The current setup-bridge reads `assets/project-root.txt` (written at build time by `prebuild` script) to find `native-host/run.sh` relative to the git repo root. This works for local development but breaks for Store distribution.
+
+**New path resolution strategy:**
+
+1. **Primary:** Check `~/.raycast-firefox/native-host/run.sh` (downloaded bundle location)
+2. **Fallback:** Check `assets/project-root.txt` path (development mode)
+3. **Neither found:** Trigger download flow
+
+This preserves backward compatibility for development (`ray develop`) while supporting Store distribution.
+
+## MVP Recommendation
+
+Prioritize for v1.1 release, in dependency order:
+
+1. **Native host bundling with `@vercel/ncc`** -- foundation for everything else. Verify the bundle works correctly with pino, pino-roll, and all source modules.
+2. **GitHub Actions CI** to build and publish bundle on release tag -- makes distribution reproducible and provides the download URL.
+3. **Download + install flow in Raycast extension** -- refactor setup-bridge to download from GitHub Releases, verify hash, extract, register manifest. This is the core user-facing feature.
+4. **Firefox AMO listing** -- can be done in parallel with items 1-3. Manual first submission through AMO web UI.
+5. **Raycast Store listing** (README, icon verification, screenshots, CHANGELOG, PR submission) -- final step, depends on working install flow since reviewers will test it.
+6. **Cross-linking between stores** -- polish step after both listings exist.
+
+**Defer to post-v1.1:**
+- Node.js SEA standalone binary: Only if user feedback shows Node.js availability is a real problem
+- Automated AMO submission in CI: Do first submission manually, automate in future releases
+- Version compatibility warnings: Nice-to-have, not blocking for initial public release
+
+## Sources
+
+- [Raycast Store Publishing Requirements](https://developers.raycast.com/basics/prepare-an-extension-for-store) -- HIGH confidence
+- [Raycast Publishing Process](https://developers.raycast.com/basics/publish-an-extension) -- HIGH confidence
+- [Raycast File Structure](https://developers.raycast.com/information/file-structure) -- HIGH confidence
+- [Raycast Binary Dependency Guidelines](https://developers.raycast.com/basics/prepare-an-extension-for-store) -- HIGH confidence (section on binary downloads)
+- [Firefox AMO Submission Guide](https://extensionworkshop.com/documentation/publish/submitting-an-add-on/) -- HIGH confidence
+- [Firefox AMO Listing Best Practices](https://extensionworkshop.com/documentation/develop/create-an-appealing-listing/) -- HIGH confidence
+- [Firefox Add-on Policies (updated June 2025)](https://blog.mozilla.org/addons/2025/06/23/updated-add-on-policies-simplified-clarified/) -- HIGH confidence
+- [Firefox MV2 Indefinite Support Confirmation](https://www.ghacks.net/2025/02/26/firefox-mozilla-confirms-support-for-classic-extensions-and-manifest-v3-add-ons/) -- HIGH confidence
+- [Mozilla web-ext Tool](https://github.com/mozilla/web-ext) -- HIGH confidence
+- [web-ext Command Reference](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/) -- HIGH confidence
+- [Node.js SEA Documentation](https://nodejs.org/api/single-executable-applications.html) -- MEDIUM confidence (macOS-specific behavior less documented)
+- [@vercel/ncc](https://github.com/vercel/ncc) -- HIGH confidence (well-established bundler)
+- [Raycast Bitwarden Extension](https://github.com/raycast/extensions/tree/main/extensions/bitwarden) -- HIGH confidence (approved Store pattern for CLI binary dependency download)
+- [GitHub Actions: Building and Testing Node.js](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs) -- HIGH confidence

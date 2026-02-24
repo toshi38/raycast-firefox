@@ -1,440 +1,575 @@
-# Architecture Research: Raycast Firefox Extension
+# Architecture Research: v1.1 Store Publishing & Distribution
 
-## 1. How Existing Raycast Browser Extensions Work
+**Domain:** Multi-component browser extension distribution (Raycast Store + Firefox AMO + native host binary)
+**Researched:** 2026-02-24
+**Confidence:** HIGH (verified against official docs for all three distribution targets)
 
-### Safari Extension (raycast/extensions — `extensions/safari`)
+## Existing Architecture (v1.0 -- What We Have)
 
-**Components:**
-- **Raycast extension (TypeScript/React)** — provides the UI (list views, search, actions)
-- **Swift helper binary** — compiled Swift executable bundled with the extension, invoked via Node.js child process
-- **AppleScript (via Swift)** — the Swift binary uses macOS NSAppleScript / osascript to talk to Safari
+```
+  Raycast                  Native Host              Firefox
+  ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
+  │ search-tabs  │        │  host.js     │        │ background.js│
+  │ setup-bridge │  HTTP  │  (Node.js)   │ stdio  │ (MV2)        │
+  │              │───────>│              │<──────>│              │
+  │ TypeScript   │ :26394 │  bridge.js   │ native │  tabs API    │
+  │ + React      │        │  server.js   │ msg    │  nativeMsgng │
+  └──────────────┘        └──────────────┘        └──────────────┘
+        │                       │                       │
+        │                       │                       │
+  Raycast copies ext       run.sh finds node       Installed from
+  to sandboxed dir         host.js has deps         .xpi sideload
+  project-root.txt ───>   (pino, pino-roll)
+  resolves native-host    node_modules in-tree
+```
 
-**Data flow for "list tabs, select, switch":**
-1. User invokes the Raycast command (e.g., "Search Safari Tabs")
-2. Raycast extension calls the bundled Swift binary via Node.js child process APIs
-3. Swift binary runs AppleScript: `tell application "Safari" to get {name, URL} of every tab of every window`
-4. Swift binary serializes result as JSON to stdout
-5. Raycast extension parses JSON, renders a List with tab titles and URLs
-6. User selects a tab; Raycast extension calls Swift binary again with a "switch" command
-7. Swift binary runs AppleScript: `tell application "Safari" to set current tab of window X to tab Y` and `activate`
-8. Safari comes to front with the correct tab
+**Current install flow (developer-only, manual):**
+1. Clone repo
+2. `cd native-host && npm install`
+3. `cd raycast-extension && npm install && npm run dev`
+4. Run "Setup Firefox Bridge" command (writes native messaging manifest)
+5. Sideload `extension/` folder into Firefox via `about:debugging`
 
-**Why this works for Safari:** Safari has first-class AppleScript support as a macOS-native application. It exposes a scriptable interface (Safari.sdef) with objects for windows, tabs, and their properties.
-
-### Chrome/Arc/Brave Extensions (raycast/extensions — various)
-
-**Components:**
-- **Raycast extension (TypeScript/React)** — UI layer
-- **AppleScript via osascript** — Chrome family browsers also expose AppleScript dictionaries
-
-**Data flow:**
-1. Raycast extension spawns osascript with AppleScript to query Chrome
-2. AppleScript returns tab data (title, URL, window index, tab index)
-3. Raycast extension parses and displays
-4. On selection, another AppleScript call activates the window and sets the active tab index
-
-**Why this works for Chrome:** Google Chrome (and Chromium-based browsers) ship with AppleScript support on macOS. They expose window, tab, active tab index, URL, title in their scripting dictionaries.
-
-### Key Observation
-
-Both Safari and Chrome Raycast extensions rely on **AppleScript** as the communication bridge. This is the simplest, most reliable approach because:
-- No extra installation required (no companion browser extension)
-- No persistent background process
-- Synchronous request-response model
-- Well-understood, stable API
+**Key coupling points that must change:**
+- `project-root.txt` asset ties Raycast extension to repo checkout location
+- `run.sh` depends on finding `node` in user's PATH/nvm/homebrew
+- `host.js` requires `node_modules/` (pino, pino-roll) at sibling path
+- Firefox extension is sideloaded, not signed
 
 ---
 
-## 2. The Firefox Problem
+## Target Architecture (v1.1 -- What We Need)
 
-**Firefox does NOT have an AppleScript dictionary.** Unlike Safari and Chrome, Firefox on macOS does not expose a scriptable interface. Running `tell application "Firefox" to get name of every tab of every window` fails.
-
-This means we cannot use the same simple approach as Safari/Chrome extensions.
-
-### Available Communication Approaches for Firefox
-
-#### Approach A: Native Messaging (Browser Extension + Native Messaging Host)
-
-**Components:**
-1. **Raycast extension** (TypeScript/React) — UI layer
-2. **Firefox WebExtension** (companion add-on) — runs inside Firefox, has access to browser.tabs API
-3. **Native Messaging Host** (executable on disk) — registered with Firefox, can exchange messages with the WebExtension
-4. **IPC mechanism** — connects the Raycast extension to the Native Messaging Host (e.g., Unix domain socket, HTTP localhost, or file-based)
-
-**Data flow:**
 ```
-Raycast Extension  <--IPC-->  Native Messaging Host  <--stdin/stdout-->  Firefox WebExtension
-     (Node.js)                  (Python/Node/Swift)                        (JavaScript)
-```
-
-1. User invokes Raycast command "Search Firefox Tabs"
-2. Raycast extension connects to Native Messaging Host via IPC (e.g., HTTP on localhost or Unix socket)
-3. Native Messaging Host sends a request to the Firefox WebExtension via native messaging (stdin/stdout)
-4. WebExtension calls `browser.tabs.query({})` — returns all tabs with title, URL, windowId, id
-5. WebExtension sends JSON response back to Native Messaging Host via the native messaging port
-6. Native Messaging Host forwards to Raycast extension
-7. User selects a tab; Raycast extension sends "switch" request through the same path
-8. WebExtension calls `browser.tabs.update(tabId, {active: true})` + `browser.windows.update(windowId, {focused: true})`
-9. Firefox brings the tab to front
-
-**Pros:**
-- Full access to Firefox WebExtension APIs (tabs, bookmarks, history, etc.)
-- Official, supported, stable API
-- Works with any Firefox feature the WebExtension API exposes
-- Future-proof for v2 features (bookmarks, history, tab management)
-
-**Cons:**
-- Requires user to install a companion Firefox extension
-- Requires a native messaging host manifest registered in Firefox config
-- More moving parts (3 components instead of 1)
-- Setup friction for first-time users
-
-#### Approach B: Firefox Remote Debugging Protocol (CDP-like)
-
-**Components:**
-1. **Raycast extension** (TypeScript/React)
-2. **Firefox with remote debugging enabled** — via --start-debugger-server or devtools.debugger.remote-enabled
-
-**Data flow:**
-```
-Raycast Extension  <--WebSocket-->  Firefox Remote Debugging Server
-     (Node.js)                        (localhost:6000)
+  Raycast Store             GitHub Releases           Firefox AMO
+  ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
+  │ raycast-ext  │        │ native-host  │        │ WebExtension │
+  │  published   │        │  binary      │        │  .xpi signed │
+  │  via PR to   │        │  (Node SEA   │        │  reviewed    │
+  │  raycast/    │        │   or bundled │        │              │
+  │  extensions) │        │   + node)    │        │              │
+  └──────┬───────┘        └──────┬───────┘        └──────┬───────┘
+         │                       │                       │
+    User installs           Raycast ext              User installs
+    from Store              downloads &              from AMO
+         │                  registers                    │
+         v                       v                       v
+  ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
+  │ Raycast ext  │  HTTP  │ Native host  │ stdio  │ WebExtension │
+  │ search-tabs  │───────>│ standalone   │<──────>│ background.js│
+  │ setup-bridge │ :26394 │ binary       │ native │              │
+  └──────────────┘        └──────────────┘  msg   └──────────────┘
 ```
 
-1. Firefox must be started/configured with remote debugging enabled
-2. Raycast extension connects via WebSocket to localhost:6000
-3. Sends protocol commands to list tabs, navigate, etc.
-4. Receives responses
+### What Changes vs. What Stays
 
-**Pros:**
-- No companion extension needed
-- Direct programmatic access
-
-**Cons:**
-- Requires user to enable remote debugging (security concern, non-trivial setup)
-- The protocol is underdocumented and not stable
-- Firefox Remote Debugging Protocol (RDP) is NOT the same as Chrome DevTools Protocol (CDP) — fewer tools/libraries
-- Remote debugging exposes powerful capabilities (security risk)
-- May require Firefox restart with flags
-- Poor UX for end users
-
-#### Approach C: Read Firefox Session Data Directly
-
-**Components:**
-1. **Raycast extension** (TypeScript/React)
-2. **Firefox profile directory** — contains sessionstore-backups/recovery.jsonlz4
-
-**Data flow:**
-```
-Raycast Extension  --reads-->  ~/Library/Application Support/Firefox/Profiles/<profile>/sessionstore-backups/recovery.jsonlz4
-```
-
-1. Raycast extension locates Firefox profile directory
-2. Reads recovery.jsonlz4 (LZ4-compressed JSON of the current session)
-3. Decompresses and parses to extract window/tab data (URLs, titles)
-4. Displays in Raycast
-
-For switching:
-- Cannot directly switch tabs via file read (one-way: read-only)
-- Would need to combine with `open -a Firefox` + URL scheme or AppleScript activate (imprecise)
-
-**Pros:**
-- Zero installation — no companion extension, no native messaging host
-- Fast read of current state
-- Works even if Firefox APIs change
-
-**Cons:**
-- **Read-only** — cannot switch tabs, only list them
-- File format is undocumented, may change between Firefox versions
-- LZ4 decompression needs a library (mozLz4 format, not standard LZ4)
-- Session file is updated periodically (every ~15 seconds), so data can be stale
-- Tab switching would require a hacky workaround (opening the URL in a new tab rather than switching)
-- Breaks the "switch to tab" core requirement
-
-#### Approach D: Hybrid — Session File (read) + AppleScript activate + URL Scheme
-
-**Components:**
-1. **Raycast extension** (TypeScript/React)
-2. **Firefox profile directory** (for reading tab data)
-3. **open command or AppleScript** (for activating Firefox)
-
-**Data flow:**
-1. Read tabs from recovery.jsonlz4
-2. On selection, use `open "firefox://..."` or `open -a Firefox URL` to navigate
-3. This opens or focuses the URL — but may open a NEW tab instead of switching to the existing one
-
-**Pros:**
-- No companion extension needed
-- Simpler than native messaging
-
-**Cons:**
-- Cannot reliably switch to an existing tab (may open a duplicate)
-- Stale data (session file lag)
-- Fragile
+| Component | Changes | Stays Same |
+|-----------|---------|------------|
+| **Raycast extension** | Setup flow downloads binary from GitHub Releases; removes project-root.txt dependency; adds README for Store | All tab search/switch/close logic; HTTP communication; error classification; port file watching |
+| **Native host** | Bundled into single file (esbuild) then wrapped as standalone binary; CI builds on tag push | All protocol, bridge, server, lifecycle, favicon logic |
+| **Firefox extension** | Signed and listed on AMO; AMO description guides users to Raycast Store | All background.js logic; manifest.json; native messaging |
+| **CI/CD (NEW)** | GitHub Actions workflow builds native host binary and publishes to Releases | N/A (new component) |
+| **Communication** | Unchanged | HTTP on localhost:26394; native messaging stdio; port file at ~/.raycast-firefox/port |
 
 ---
 
-## 3. Recommended Approach
+## Component Boundaries
 
-### Primary: Approach A — Native Messaging (WebExtension + Native Messaging Host)
+### Component 1: Native Host Build Pipeline (NEW)
 
-This is the only approach that satisfies all requirements:
-- List tabs accurately and in real-time
-- Switch to a specific existing tab (not open a duplicate)
-- Extensible to bookmarks, history, tab management in v2
-- Uses official, stable Firefox WebExtension APIs
-- All local, privacy-preserving
+**Responsibility:** Bundle `native-host/` into a standalone macOS binary that runs without Node.js or npm installed.
 
-### Fallback: Approach C+D as a read-only MVP
+**Architecture decision: esbuild + Node.js SEA**
 
-If the goal is to ship something minimal first, reading session data provides a quick "list tabs" feature. But tab switching will be unreliable. This could serve as a Phase 0 prototype but should not be the long-term architecture.
+The native host uses CommonJS (`require`) with two npm dependencies (pino, pino-roll). The build pipeline is:
+
+```
+native-host/host.js + src/*.js + node_modules/
+        │
+        v  (esbuild --bundle --platform=node --format=cjs)
+  dist/host.bundle.js  (single file, all deps inlined)
+        │
+        v  (node --build-sea sea-config.json)
+  dist/raycast-firefox-host  (standalone macOS binary)
+        │
+        v  (codesign --sign -)
+  dist/raycast-firefox-host  (ad-hoc signed for macOS)
+```
+
+**Why esbuild + SEA over alternatives:**
+
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| **esbuild + Node.js SEA** | RECOMMENDED | esbuild handles CJS bundling perfectly; SEA is built into Node.js core (v25.5+ has `--build-sea`); no third-party tooling; produces genuine native binary |
+| **vercel/pkg** | REJECTED | Deprecated, no longer maintained, broken on Node.js 22+ |
+| **nexe** | REJECTED | Unmaintained since 2017, no support for modern Node.js |
+| **Just esbuild (no SEA)** | FALLBACK | Bundle to single .js file, use Raycast's `process.execPath` (Node 22.14+) to run it. Smaller download (~50KB vs ~80MB) but requires Raycast to be the launcher, which breaks native messaging (Firefox launches the host, not Raycast) |
+| **Ship run.sh + bundle.js** | VIABLE ALTERNATIVE | esbuild bundles to single .js, ship with a shell script that finds node. Avoids 80MB binary. But still requires Node.js on user's machine |
+
+**Critical size consideration:** Node.js SEA binaries are ~80MB on macOS arm64 because they embed the entire Node.js runtime. This is the main downside. However:
+- Users download once, cached in `~/.raycast-firefox/bin/`
+- GitHub Releases serves via CDN (fast)
+- Alternative: ship the esbuild bundle + detect/use system Node.js, falling back to download
+
+**Recommended approach: Tiered strategy**
+
+1. **Primary (preferred):** esbuild bundle (~50KB) + use Raycast's Node.js (`process.execPath`) for the setup command registration. But the native messaging manifest `path` must point to something Firefox can launch independently -- so we need a thin wrapper script that finds Node.js.
+2. **For users without system Node.js:** Ship a small shell wrapper (`raycast-firefox-host.sh`) that: (a) tries system node, (b) tries Raycast's node at known paths, (c) if neither found, tells user to install Node.js or falls back to SEA binary download.
+
+**Final recommendation:** Ship an **esbuild-bundled single JS file** via GitHub Releases (~50KB compressed), with a **shell wrapper** that locates Node.js. This is the same pattern as v1.0's `run.sh` but eliminates the `node_modules` dependency. Only fall back to the full SEA binary if the project later needs to support users with zero Node.js installation.
+
+**Rationale for NOT starting with SEA:**
+- 80MB download per user is excessive for a tab switcher
+- Raycast requires Node.js anyway (it auto-installs Node 22.14+), so every Raycast user already has Node.js
+- The shell wrapper + bundle approach worked well in v1.0
+- SEA can be added later if demand exists
+
+### Component 2: GitHub Actions CI/CD (NEW)
+
+**Responsibility:** Build the bundled native host, create GitHub Releases with assets, and compute checksums.
+
+**Trigger:** Git tag push matching `v*` pattern.
+
+**Workflow structure:**
+
+```yaml
+# .github/workflows/release.yml
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build-native-host:
+    runs-on: macos-latest  # arm64 runner
+    steps:
+      - checkout
+      - setup-node (22.x)
+      - npm ci (in native-host/)
+      - npx esbuild host.js --bundle --platform=node --format=cjs --outfile=dist/host.bundle.js
+      - Generate SHA256 checksum
+      - Upload artifacts
+
+  create-release:
+    needs: build-native-host
+    steps:
+      - Download artifacts
+      - Create GitHub Release with:
+        - raycast-firefox-host.js (bundled JS)
+        - raycast-firefox-host.sh (wrapper script)
+        - checksums.txt (SHA256)
+
+  # Future: build-sea job if SEA binary is needed
+```
+
+**Assets published per release:**
+
+| Asset | Size (est.) | Purpose |
+|-------|-------------|---------|
+| `raycast-firefox-host.js` | ~50KB | esbuild-bundled native host (single file, zero deps) |
+| `raycast-firefox-host.sh` | ~1KB | Shell wrapper (finds node, runs bundle) |
+| `checksums.sha256` | ~200B | SHA256 hashes for integrity verification |
+
+### Component 3: Raycast Install Flow (MODIFIED: setup-bridge.tsx)
+
+**Responsibility:** Detect missing native host, download from GitHub Releases, register native messaging manifest -- all automated.
+
+**Current flow (v1.0):**
+```
+resolveNativeHostPath() → reads project-root.txt → finds run.sh in checkout
+```
+
+**New flow (v1.1):**
+```
+1. Check if host already installed at ~/.raycast-firefox/bin/host.bundle.js
+   │
+   ├─ YES: Check version (compare with expected version from package.json)
+   │       └─ Up to date? → Skip to step 4
+   │       └─ Outdated? → Continue to step 2
+   │
+   └─ NO: Continue to step 2
+   │
+2. Download from GitHub Releases
+   │  URL: https://github.com/<owner>/<repo>/releases/download/v{version}/raycast-firefox-host.js
+   │  Download to: {environment.supportPath}/tmp/host.bundle.js
+   │
+3. Verify SHA256 checksum
+   │  Download checksums.sha256 from same release
+   │  Compare hash of downloaded file
+   │  On mismatch → error, delete file, abort
+   │
+4. Install to ~/.raycast-firefox/bin/
+   │  Copy host.bundle.js
+   │  Copy/generate wrapper script
+   │  chmod +x wrapper script
+   │
+5. Write native messaging manifest
+   │  path: ~/.raycast-firefox/bin/raycast-firefox-host.sh
+   │  (replaces old path that pointed to repo checkout)
+   │
+6. Verify chain (existing logic)
+```
+
+**Key architectural decisions for the install flow:**
+
+1. **Install location:** `~/.raycast-firefox/bin/` -- already using `~/.raycast-firefox/` for port and PID files; extending it is natural.
+
+2. **Download source: GitHub Releases** -- Raycast Store review policy says "done from a server that you don't have access to" is fine. GitHub Releases for a public repo with open-source build pipeline satisfies this: the CI builds are reproducible, the source is available, and checksums provide integrity verification. The Speedtest extension pattern (downloading from `install.speedtest.net`) is analogous.
+
+3. **Version tracking:** Write `~/.raycast-firefox/bin/version.txt` with the installed version. Compare against expected version embedded in the Raycast extension at build time.
+
+4. **Node.js discovery in wrapper script:** The wrapper script (`raycast-firefox-host.sh`) needs to find Node.js when launched by Firefox's native messaging (which does NOT inherit user PATH). Discovery order:
+   - `$HOME/.raycast-firefox/node` (symlink to Raycast's node, created during setup)
+   - Common paths: `/opt/homebrew/bin/node`, `/usr/local/bin/node`
+   - nvm paths (same as current `run.sh`)
+
+5. **Symlink Raycast's Node.js:** During setup, create `~/.raycast-firefox/node` as a symlink to `process.execPath`. This is the most reliable approach because every Raycast user has this Node.js.
+
+**File layout after install:**
+```
+~/.raycast-firefox/
+├── bin/
+│   ├── host.bundle.js          # Downloaded from GitHub Releases
+│   ├── raycast-firefox-host.sh  # Wrapper script (finds node, runs bundle)
+│   └── version.txt              # Installed version
+├── node -> /path/to/raycast/node  # Symlink to Raycast's Node.js
+├── host.pid                     # Existing: PID of running host
+├── port                         # Existing: HTTP server port
+└── logs/                        # Existing: pino log files
+```
+
+### Component 4: Firefox AMO Listing (MODIFIED: extension/)
+
+**Responsibility:** Package and submit the Firefox WebExtension to addons.mozilla.org.
+
+**What changes:**
+- Extension is signed by AMO (currently sideloaded unsigned)
+- AMO listing description must guide users to install the Raycast companion
+- Extension ID (`raycast-firefox@lau.engineering`) is already set -- good, required for AMO
+
+**What stays the same:**
+- All `background.js` logic
+- `manifest.json` structure (MV2 is fully supported on AMO, Firefox committed to continued MV2 support)
+- Native messaging permission and protocol
+
+**AMO submission requirements:**
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Extension ID set | Done | `raycast-firefox@lau.engineering` in manifest.json |
+| MV2 supported | Yes | Firefox confirmed continued MV2 support alongside MV3 |
+| Source code submission | Needed | Must upload source .zip if code is minified/bundled (ours is plain JS, may not need it) |
+| Max file size | Fine | Extension is tiny (<200KB) |
+| Privacy policy | Not required | No data collection, August 2025 policy update removed AMO-hosted privacy policy requirement |
+| AMO listing description | NEW | Must explain that this is a companion to a Raycast extension and link to Raycast Store |
+
+**AMO listing cross-link strategy:**
+```
+Extension description on AMO:
+"Companion extension for the Raycast Firefox Tabs extension.
+This extension enables tab search and switching from Raycast.
+
+Setup:
+1. Install this Firefox extension
+2. Install "Firefox Tabs" from the Raycast Store
+3. Run "Setup Firefox Bridge" in Raycast
+4. You're ready! Search your tabs with Cmd+Space → 'tabs'"
+```
+
+### Component 5: Raycast Store Listing (MODIFIED: raycast-extension/)
+
+**Responsibility:** Submit the Raycast extension to the Raycast Store.
+
+**What changes:**
+- Extension published via `npm run publish` (creates PR to `raycast/extensions` repo)
+- Must have 512x512 icon, README, screenshots, MIT license
+- `project-root.txt` pattern REMOVED -- replaced by GitHub Releases download flow
+- README added explaining the Firefox extension requirement
+
+**Raycast Store submission requirements:**
+
+| Requirement | Status | Action Needed |
+|-------------|--------|---------------|
+| 512x512 icon (PNG) | Exists (icon.png) | Verify size and quality |
+| MIT license | Set in package.json | Done |
+| README.md | Missing | Create with setup instructions |
+| CHANGELOG.md | Missing | Create |
+| Screenshots (2000x1250) | Missing | Create 3-6 screenshots |
+| npm run build passes | Need to verify | Must work without project-root.txt |
+| Latest @raycast/api | ^1.104.0 | Check if newer available |
+| No bundled binaries | Correct | Binary downloaded at runtime |
+
+**Raycast Store cross-link strategy:**
+- README explains Firefox extension requirement
+- Error states in search-tabs.tsx link directly to AMO listing
+- Setup command automates everything except Firefox extension install
 
 ---
 
-## 4. Component Boundaries
+## Data Flow Changes
 
-### Component 1: Raycast Extension (TypeScript/React)
+### Current (v1.0): Setup Flow
 
-**Responsibility:** UI rendering, user interaction, fuzzy search filtering
-**Boundary:** Communicates with Native Messaging Host via IPC; never talks to Firefox directly
-**Key files:**
-- `src/search-tabs.tsx` — main command, renders List of tabs
-- `src/lib/firefox-client.ts` — IPC client to communicate with the native messaging host
-- `package.json` — Raycast extension manifest
+```
+User runs "Setup Firefox Bridge"
+    │
+    v
+resolveNativeHostPath()
+    │  reads assets/project-root.txt
+    │  resolves to /Users/xxx/code/raycast-firefox/native-host/run.sh
+    v
+generateManifest(runShPath)
+    │  writes JSON with path to run.sh
+    v
+writeManifest()  →  ~/Library/.../NativeMessagingHosts/raycast_firefox.json
+    │
+    v
+verifyChain()  →  ping localhost:26394/health
+```
 
-### Component 2: Firefox WebExtension (JavaScript)
+### New (v1.1): Setup Flow
 
-**Responsibility:** Access Firefox internal state via browser.tabs, browser.bookmarks, browser.history APIs
-**Boundary:** Communicates only with the Native Messaging Host via native messaging (browser.runtime.connectNative / browser.runtime.sendNativeMessage)
-**Key files:**
-- `firefox-extension/manifest.json` — WebExtension manifest (v2 or v3)
-- `firefox-extension/background.js` — background script that listens for native messages and queries Firefox APIs
+```
+User runs "Setup Firefox Bridge"
+    │
+    v
+checkInstalledVersion()
+    │  reads ~/.raycast-firefox/bin/version.txt
+    │  compares with expected version
+    │
+    ├─ Missing or outdated ──────────────────────────────┐
+    │                                                     v
+    │                                              downloadFromGitHub()
+    │                                                │  fetch host.bundle.js
+    │                                                │  fetch checksums.sha256
+    │                                                │  verify SHA256
+    │                                                │  write to ~/.raycast-firefox/bin/
+    │                                                │  write version.txt
+    │                                                v
+    │                                              installWrapper()
+    │                                                │  write raycast-firefox-host.sh
+    │                                                │  chmod +x
+    │                                                │  symlink node → process.execPath
+    │                                                v
+    ├─ Up to date ───────────────────────────────────┤
+    │                                                 │
+    v                                                 v
+generateManifest(wrapperPath)
+    │  path: ~/.raycast-firefox/bin/raycast-firefox-host.sh
+    v
+writeManifest()  →  ~/Library/.../NativeMessagingHosts/raycast_firefox.json
+    │
+    v
+verifyChain()  →  ping localhost:26394/health
+```
 
-### Component 3: Native Messaging Host (Node.js or Python)
+### Unchanged: Runtime Data Flow
 
-**Responsibility:** Bridge between the Raycast extension and the Firefox WebExtension
-**Boundary:**
-- Upstream: Listens on localhost HTTP (or Unix socket) for requests from the Raycast extension
-- Downstream: Communicates with Firefox WebExtension via stdin/stdout native messaging protocol
-**Key files:**
-- `native-host/server.js` — HTTP server or socket listener
-- `native-host/manifest.json` — Native messaging host manifest (registered with Firefox)
-- `native-host/install.sh` — Installation script to register the native messaging host
+The runtime communication between Raycast, native host, and Firefox remains identical:
 
-### IPC Between Raycast Extension and Native Messaging Host
-
-**Options (ranked by simplicity):**
-
-1. **HTTP on localhost** — Raycast extension does fetch to http://localhost:PORT/tabs. Simple, well-understood, easy to debug. The native host runs as a persistent background process.
-
-2. **Unix domain socket** — Similar to HTTP but uses a file-based socket. Slightly more secure (not exposed on network). Requires socket path convention.
-
-3. **Direct stdin/stdout invocation** — Raycast extension spawns the native host process each time. Simpler lifecycle but slower (process startup per request). The native host would need to wake up the Firefox WebExtension each time.
-
-**Recommendation:** HTTP on localhost is the most practical for Raycast extensions (Raycast's Node.js runtime supports fetch natively, and it aligns with how other Raycast extensions communicate with local services).
+```
+Raycast ──HTTP GET /tabs──> Native Host ──native msg──> Firefox
+Raycast <──JSON response─── Native Host <──tab data──── Firefox
+```
 
 ---
 
-## 5. Data Flow: "List Tabs, Select, Switch"
+## Architectural Patterns
 
-```
-+---------------+     HTTP GET       +--------------------+    stdin/stdout     +-----------------------+
-|   Raycast     |  /tabs             |  Native Messaging  |   native msg       |  Firefox WebExtension |
-|  Extension    | ------------------>|      Host           | ------------------>|   (background.js)     |
-|  (React UI)   |                    |  (localhost:PORT)   |                    |                       |
-|               |                    |                     |   browser.tabs     |                       |
-|               |                    |                     |   .query({})       |                       |
-|               |                    |                     |<------------------|  Firefox Browser       |
-|               |  JSON [{tab}...]   |                     |   JSON response    |                       |
-|               |<------------------|                     |                    |                       |
-|               |                    |                     |                    |                       |
-|  User picks   |  HTTP POST         |                     |   native msg       |                       |
-|  a tab        |  /switch           |                     |                    |                       |
-|               |  {tabId, windowId} |                     |   browser.tabs     |                       |
-|               | ------------------>|                     | ------------------>|  .update(tabId,       |
-|               |                    |                     |                    |   {active:true})      |
-|               |                    |                     |                    |  browser.windows      |
-|               |  200 OK            |                     |                    |  .update(windowId,    |
-|               |<------------------|                     |<------------------|   {focused:true})     |
-+---------------+                    +--------------------+                    +-----------------------+
-```
+### Pattern 1: Download-Verify-Install (for native host binary)
 
-### Message Format (proposed)
+**What:** Download an external binary at setup time, verify its integrity, install to a known location.
+**When to use:** When the Raycast Store prohibits bundling binaries and the binary is needed by an external process (Firefox).
+**Trade-offs:** Extra setup step, but automated; needs internet on first setup; version management needed.
 
-**Request: List tabs**
-```
-GET http://localhost:26394/tabs
-Response:
-{
-    "tabs": [
-      {
-        "id": 42,
-        "windowId": 1,
-        "title": "GitHub - raycast/extensions",
-        "url": "https://github.com/raycast/extensions",
-        "active": true,
-        "favIconUrl": "https://github.com/favicon.ico"
-      }
-    ]
+**Implementation sketch:**
+```typescript
+async function downloadAndInstall(version: string): Promise<string> {
+  const baseUrl = `https://github.com/user/repo/releases/download/v${version}`;
+  const tmpDir = join(environment.supportPath, "tmp");
+  mkdirSync(tmpDir, { recursive: true });
+
+  // Download bundle and checksums
+  const bundlePath = join(tmpDir, "host.bundle.js");
+  const bundleRes = await fetch(`${baseUrl}/raycast-firefox-host.js`);
+  writeFileSync(bundlePath, Buffer.from(await bundleRes.arrayBuffer()));
+
+  const checksumRes = await fetch(`${baseUrl}/checksums.sha256`);
+  const checksums = await checksumRes.text();
+
+  // Verify SHA256
+  const hash = createHash("sha256").update(readFileSync(bundlePath)).digest("hex");
+  const expectedHash = checksums.split("\n")
+    .find(l => l.includes("raycast-firefox-host.js"))
+    ?.split(" ")[0];
+  if (hash !== expectedHash) {
+    throw new Error("Checksum mismatch -- download may be corrupted");
   }
+
+  // Install
+  const installDir = join(homedir(), ".raycast-firefox", "bin");
+  mkdirSync(installDir, { recursive: true });
+  copyFileSync(bundlePath, join(installDir, "host.bundle.js"));
+
+  // Clean up temp
+  rmSync(tmpDir, { recursive: true, force: true });
+
+  return installDir;
+}
 ```
 
-**Request: Switch to tab**
+### Pattern 2: Node.js Discovery Chain (for native messaging)
+
+**What:** A shell wrapper that finds a working Node.js binary through multiple fallback paths, used when Firefox launches the native messaging host (no user PATH available).
+**When to use:** When the binary needs to be launched by a process (Firefox) that does not inherit the user's shell environment.
+
+**Implementation sketch (raycast-firefox-host.sh):**
+```bash
+#!/bin/bash
+DIR="$(cd "$(dirname "$0")" && pwd)"
+BUNDLE="$DIR/host.bundle.js"
+
+# 1. Symlink created by Raycast setup (most reliable)
+if [ -x "$HOME/.raycast-firefox/node" ]; then
+  exec "$HOME/.raycast-firefox/node" "$BUNDLE" "$@"
+fi
+
+# 2. Homebrew Apple Silicon
+if [ -x "/opt/homebrew/bin/node" ]; then
+  exec /opt/homebrew/bin/node "$BUNDLE" "$@"
+fi
+
+# 3. Homebrew Intel
+if [ -x "/usr/local/bin/node" ]; then
+  exec /usr/local/bin/node "$BUNDLE" "$@"
+fi
+
+# 4. nvm (if available)
+if [ -d "$HOME/.nvm/versions/node" ]; then
+  NVM_NODE=$(ls -d "$HOME/.nvm/versions/node"/v*/bin/node 2>/dev/null | sort -V | tail -1)
+  [ -n "$NVM_NODE" ] && [ -x "$NVM_NODE" ] && exec "$NVM_NODE" "$BUNDLE" "$@"
+fi
+
+echo "ERROR: node not found" >&2
+exit 1
 ```
-POST http://localhost:26394/switch
-Body: { "tabId": 42, "windowId": 1 }
-Response: { "ok": true }
-```
+
+### Pattern 3: Cross-Component Error Detection with Recovery Actions
+
+**What:** Each component detects missing siblings and guides the user to install them.
+**When to use:** Multi-component systems where components are installed separately from different stores.
+
+**Already implemented in v1.0** (error classification in `errors.ts`), needs extension for v1.1:
+
+| Error State | Detected By | Recovery Action |
+|-------------|-------------|-----------------|
+| Firefox not running | Raycast (pgrep) | "Launch Firefox" button |
+| Native host not running | Raycast (ECONNREFUSED) | "Set Up Native Host" → setup-bridge |
+| WebExtension not connected | Raycast (HTTP 502) | "Install WebExtension" → AMO URL |
+| Native host binary missing | setup-bridge (file check) | Download from GitHub Releases |
+| Host binary outdated | setup-bridge (version check) | Re-download from GitHub Releases |
 
 ---
 
-## 6. Alternative: Simplified Architecture (No Persistent Host)
+## Anti-Patterns
 
-A lighter variant removes the persistent HTTP server by having the Raycast extension invoke the native messaging host as a one-shot process.
+### Anti-Pattern 1: Bundling the Native Host Binary in the Raycast Extension
 
-```
-Raycast Extension  --spawn-->  native-host-cli  --stdin/stdout-->  Firefox WebExtension
-```
+**What people do:** Include the native host binary in the extension's `assets/` directory.
+**Why it's wrong:** Raycast Store rejects extensions with opaque/heavy bundled binaries. The ~50KB JS bundle alone might be acceptable, but the 80MB SEA binary absolutely would not be. More importantly, updates to the native host would require a Raycast extension update cycle (PR review).
+**Do this instead:** Download from GitHub Releases at setup time with checksum verification.
 
-**Problem:** Native messaging hosts are launched BY Firefox in response to browser.runtime.connectNative(). The Raycast extension cannot directly invoke the native messaging channel. The WebExtension initiates the connection, not the external process.
+### Anti-Pattern 2: Depending on project-root.txt for Store Distribution
 
-**This means** the data flow must be:
-- The WebExtension establishes a persistent native messaging port on startup
-- The native host runs persistently (launched by Firefox when the extension loads)
-- The Raycast extension communicates with the native host via IPC (HTTP/socket/file)
+**What people do:** Keep the build-time path resolution (`project-root.txt`) for finding the native host.
+**Why it's wrong:** When installed from the Raycast Store, the extension is sandboxed -- it doesn't live in a git checkout. The path would be meaningless. This is the #1 thing that must change for v1.1.
+**Do this instead:** Install native host to a well-known location (`~/.raycast-firefox/bin/`) and resolve from there.
 
-OR alternatively:
-- The WebExtension periodically dumps tab data to a known file location
-- The Raycast extension reads that file
-- For write operations (switch tab), the WebExtension polls a "command" file or socket
+### Anti-Pattern 3: Requiring Manual CLI Steps After Store Install
 
-### Revised Simpler Architecture: File-based IPC
+**What people do:** Tell users "run `npm install` and `./install.sh` in the terminal."
+**Why it's wrong:** Raycast Store users are not necessarily developers. The whole point of the Store is zero-friction install.
+**Do this instead:** Automate everything from the setup-bridge command. The only manual step should be installing the Firefox extension from AMO (which is a one-click browser action).
 
-```
-Firefox WebExtension  --writes-->  /tmp/raycast-firefox-tabs.json  <--reads--  Raycast Extension
-Raycast Extension  --writes-->  /tmp/raycast-firefox-cmd.json  <--polls--  Firefox WebExtension
-```
+### Anti-Pattern 4: Using a Custom Server for Binary Distribution
 
-**Pros:** No persistent native host process needed; WebExtension does the work
-**Cons:** Polling introduces latency; file locking issues; less clean
+**What people do:** Host the native host binary on a personal server or S3 bucket.
+**Why it's wrong:** Raycast Store explicitly rejects this pattern -- "make sure it's done from a server that you don't have access to." A personal server means you could swap the binary with malicious code after review.
+**Do this instead:** Use GitHub Releases for a public, open-source repository. The CI pipeline is transparent, and the checksums are published alongside the binaries.
 
 ---
 
-## 7. Recommended Final Architecture
+## Integration Points
 
-After analyzing all options, the recommended architecture is:
+### External Services
 
-### Native Messaging Host as Persistent Local Server
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| GitHub Releases | HTTP download at setup time | Public URL, SHA256 checksums, CDN-backed |
+| Firefox AMO | WebExtension upload via web UI | One-time submission, auto-updates on new versions |
+| Raycast Store | PR to `raycast/extensions` repo | Review process, must pass `npm run build` |
+| GitHub Actions | CI on tag push | Builds esbuild bundle, creates Release |
+
+### Internal Boundaries
+
+| Boundary | Communication | v1.1 Changes |
+|----------|---------------|--------------|
+| Raycast ext <-> Native host | HTTP on localhost:26394 | No change |
+| Firefox ext <-> Native host | Native messaging (stdio) | No change |
+| Raycast ext <-> GitHub Releases | HTTPS download | NEW: setup-bridge downloads binary |
+| setup-bridge <-> filesystem | Read/write ~/.raycast-firefox/ | MODIFIED: new bin/ subdirectory |
+| Native messaging manifest | JSON file in ~/Library/... | MODIFIED: path points to ~/.raycast-firefox/bin/ instead of repo checkout |
+
+---
+
+## Build Order (Dependency-Aware)
+
+The components have a strict dependency order:
 
 ```
-+----------------+          +---------------------+          +--------------------+
-|   Raycast      |   HTTP   |   Native Messaging  |  native  |   Firefox          |
-|  Extension     |<-------->|      Host            |<-------->|  WebExtension      |
-|  (TypeScript)  | localhost |  (Node.js/Python)   |  msg     |  (background.js)   |
-+----------------+          +---------------------+          +--------------------+
-                                     |
-                             Launched by Firefox
-                             when WebExtension loads
+Phase 1: Native Host Bundling (esbuild)
+   │  Produces: host.bundle.js (single file, zero deps)
+   │  No external dependencies, can be tested locally
+   │
+Phase 2: CI/CD Pipeline (GitHub Actions)
+   │  Depends on: Phase 1 (needs esbuild config to build)
+   │  Produces: GitHub Releases with versioned assets
+   │
+Phase 3: Raycast Install Flow (setup-bridge rewrite)
+   │  Depends on: Phase 2 (needs Releases URL to download from)
+   │  Produces: automated download + register flow
+   │  BREAKS: project-root.txt dependency (intentional)
+   │
+Phase 4: Firefox AMO Submission
+   │  Depends on: Nothing (extension code is unchanged)
+   │  BUT: should happen after Phase 3 so AMO listing can
+   │  reference the correct Raycast setup instructions
+   │
+Phase 5: Raycast Store Submission
+   │  Depends on: Phase 3 (setup flow must work without git checkout)
+   │  Depends on: Phase 4 (AMO URL needed for error state links)
+   │  Produces: listed extension in Raycast Store
 ```
 
-**Lifecycle:**
-1. User installs the Firefox WebExtension (from AMO or as a temporary add-on during dev)
-2. On load, the WebExtension calls browser.runtime.connectNative("raycast_firefox") — this launches the native messaging host
-3. The native messaging host starts an HTTP server on localhost:PORT
-4. When the user invokes the Raycast command, it sends HTTP requests to localhost:PORT
-5. The native host relays requests/responses between HTTP and the native messaging stdin/stdout channel
-6. When Firefox closes, the native messaging connection drops and the host process exits
+**Phase ordering rationale:**
+- Phases 1-2 are pure infrastructure with no user-facing changes
+- Phase 3 is the critical pivot: after this, the extension works for non-developers
+- Phase 4 is mostly a packaging/submission task, low risk
+- Phase 5 must be last because it's the final "published" state; everything must work end-to-end first
 
 ---
 
-## 8. Build Order (Dependencies)
+## Sources
 
-### Phase 1: Firefox WebExtension (foundation)
-- Build manifest.json with nativeMessaging permission and tabs permission
-- Implement background.js that:
-  - Connects to native messaging host
-  - Listens for messages (list-tabs, switch-tab)
-  - Responds with data from browser.tabs.query() and browser.tabs.update()
-- Test with a simple native messaging host stub
-
-### Phase 2: Native Messaging Host
-- Build the host executable (Node.js recommended — same language as Raycast extension)
-- Implement stdin/stdout native messaging protocol (length-prefixed JSON, per Mozilla spec)
-- Implement HTTP server on localhost
-- Create the native messaging host manifest JSON
-- Create installation script to register the manifest with Firefox
-- Test end-to-end: WebExtension <-> Native Host <-> HTTP client (curl)
-
-### Phase 3: Raycast Extension
-- Scaffold Raycast extension with create-raycast-extension
-- Implement search-tabs command
-- Implement HTTP client to talk to native messaging host
-- Implement fuzzy search over tab titles and URLs
-- Implement "switch to tab" action
-- Handle error states (Firefox not running, host not running, extension not installed)
-
-### Phase 4: Packaging and Installation
-- Installer script that:
-  - Copies native messaging host to a known location
-  - Registers the native messaging host manifest with Firefox
-  - Provides instructions for installing the Firefox WebExtension
-- First-run experience in Raycast extension (detect if native host is available, guide setup)
-
-### Dependency Graph
-```
-Phase 1 (WebExtension) --> Phase 2 (Native Host) --> Phase 3 (Raycast Extension) --> Phase 4 (Packaging)
-         |                          |                           |
-         +---------- can develop in parallel -------------------+
-                     (with mocked interfaces)
-```
-
-Note: Phases 1-3 can be developed somewhat in parallel using mocked interfaces. The WebExtension can be tested with a mock native host; the Raycast extension can be tested with a mock HTTP server.
+- [Node.js SEA Documentation](https://nodejs.org/api/single-executable-applications.html) -- single executable application API, --build-sea flag (v25.5+), configuration options, limitations
+- [Raycast: Prepare Extension for Store](https://developers.raycast.com/basics/prepare-an-extension-for-store) -- binary download policy, icon requirements, README requirements, review criteria
+- [Raycast: Environment API](https://developers.raycast.com/api-reference/environment) -- supportPath, assetsPath properties
+- [Firefox Extension Workshop: Submitting an Add-on](https://extensionworkshop.com/documentation/publish/submitting-an-add-on/) -- AMO submission steps, source code requirements
+- [Firefox Extension Workshop: Distribute MV2 and MV3](https://extensionworkshop.com/documentation/publish/distribute-manifest-versions/) -- Firefox continues MV2 support alongside MV3
+- [Mozilla Add-ons Policy Update (August 2025)](https://blog.mozilla.org/addons/2025/06/23/updated-add-on-policies-simplified-clarified/) -- privacy policy no longer required on AMO
+- [MDN: Native Messaging](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Native_messaging) -- native messaging host manifest format, host locations
+- [esbuild: Getting Started](https://esbuild.github.io/getting-started/) -- bundling for Node.js with --platform=node
+- [Raycast Speedtest Extension](https://github.com/raycast/extensions/tree/main/extensions/speedtest) -- reference implementation for downloading CLI binary from trusted source with SHA256 verification
 
 ---
-
-## 9. Technology Choices
-
-| Component | Recommended Technology | Rationale |
-|-----------|----------------------|-----------|
-| Raycast Extension | TypeScript + React | Required by Raycast |
-| Firefox WebExtension | JavaScript (Manifest V2) | Firefox still supports MV2 well; MV2 background scripts are persistent (needed for native messaging) |
-| Native Messaging Host | Node.js (TypeScript) | Same language as Raycast extension; reduces context switching; Node.js handles stdin/stdout and HTTP easily |
-| IPC | HTTP on localhost | Simplest for Raycast to consume; easy to debug with curl; no special libraries needed |
-| Port | Fixed port (e.g., 26394) or dynamic with discovery file | Fixed is simpler; discovery file is more robust |
-
-### Firefox Manifest V2 vs V3 Note
-Firefox Manifest V3 uses event pages (non-persistent background scripts) which complicates native messaging — the background script may be suspended, dropping the native messaging connection. **Use Manifest V2** for the Firefox WebExtension to ensure the background script (and native messaging connection) stays alive while Firefox is running.
-
----
-
-## 10. Security and Privacy Considerations
-
-- **All communication is local** — HTTP server bound to 127.0.0.1 only
-- **No data leaves the machine** — tab titles and URLs stay local
-- **Native messaging host only runs when Firefox is running** — no orphan processes
-- **Port security** — any local process can connect to localhost:PORT. Mitigate with a random auth token stored in a file readable only by the user, passed as a header
-- **Firefox WebExtension permissions** — minimal: tabs (for listing), nativeMessaging (for the bridge). No host permissions or content script permissions needed
-
----
-
-## 11. Risks and Open Questions
-
-| Risk | Mitigation |
-|------|------------|
-| User setup friction (3 components to install) | Good installer script + first-run detection in Raycast extension |
-| Native messaging host may not start reliably | Health check endpoint; Raycast extension shows clear error if unreachable |
-| Firefox MV3 migration may break persistent background scripts | Use MV2 for now; Firefox has committed to long-term MV2 support |
-| Port conflicts on localhost | Use a high, unusual port number; consider dynamic port with discovery file |
-| Session restoration (Firefox restart) | WebExtension reconnects native messaging on startup; native host restarts |
-
-### Open Questions for Further Research
-1. What port number to use? (Check IANA unassigned ranges)
-2. Should the native host be Node.js or a compiled binary (Go/Rust) for easier distribution?
-3. Can the Raycast extension detect if Firefox is running before attempting connection?
-4. How to handle multiple Firefox profiles?
-5. What is the exact native messaging protocol format? (Length-prefixed 4-byte native-endian + JSON)
-
----
-
-*Researched: 2026-02-06*
-*Confidence: High for the overall architecture; the native messaging approach is well-established and used by many Firefox-adjacent tools (e.g., browserpass, KeePassXC-Browser, Tridactyl).*
+*Architecture research for: v1.1 Store Publishing & Distribution*
+*Researched: 2026-02-24*
