@@ -5,14 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** v1.1 Store Publishing & Distribution
+**Current focus:** Phase 9 — Native Host Bundling
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-24 — Milestone v1.1 started
+Phase: 9 of 13 (Native Host Bundling)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-02-24 — v1.1 roadmap created (5 phases, 30 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0% (v1.1)
 
 ## Performance Metrics
 
@@ -21,6 +23,11 @@ Last activity: 2026-02-24 — Milestone v1.1 started
 - Average duration: 5.5min
 - Total execution time: 1.48 hours
 
+**Velocity (v1.1):**
+- Total plans completed: 0
+- Average duration: —
+- Total execution time: —
+
 *Updated after each plan completion*
 
 ## Accumulated Context
@@ -28,6 +35,10 @@ Last activity: 2026-02-24 — Milestone v1.1 started
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [v1.1 roadmap]: INST-09 (eliminate project-root.txt) assigned to Phase 9 bundling — it's the architectural decoupling that enables all distribution work
+- [v1.1 roadmap]: Phase 12 (AMO) depends only on Phase 9 — can overlap with Phases 10-11 to parallelize review wait time
 
 ### Pending Todos
 
@@ -35,8 +46,9 @@ None.
 
 ### Blockers/Concerns
 
-- Native Messaging Host port selection (26394) not yet validated across machines
-- AMO review timing unknown (submit Firefox extension early when ready)
+- Raycast binary download policy ambiguity: bundle in assets/ vs. download from GitHub Releases (resolve during Phase 11 planning)
+- AMO `data_collection_permissions` value: declare "none" first, fallback to "browsingActivity" if rejected
+- AMO review timing unknown — submit early to parallelize
 
 ### Quick Tasks Completed
 
@@ -47,5 +59,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Starting v1.1 milestone — defining requirements.
+Stopped at: v1.1 roadmap created. Ready to plan Phase 9.
 Resume file: None

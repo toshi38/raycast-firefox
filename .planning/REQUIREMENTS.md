@@ -86,42 +86,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUND-01 | — | Pending |
-| BUND-02 | — | Pending |
-| BUND-03 | — | Pending |
-| CICD-01 | — | Pending |
-| CICD-02 | — | Pending |
-| CICD-03 | — | Pending |
-| INST-01 | — | Pending |
-| INST-02 | — | Pending |
-| INST-03 | — | Pending |
-| INST-04 | — | Pending |
-| INST-05 | — | Pending |
-| INST-06 | — | Pending |
-| INST-07 | — | Pending |
-| INST-08 | — | Pending |
-| INST-09 | — | Pending |
-| AMO-01 | — | Pending |
-| AMO-02 | — | Pending |
-| AMO-03 | — | Pending |
-| AMO-04 | — | Pending |
-| STORE-01 | — | Pending |
-| STORE-02 | — | Pending |
-| STORE-03 | — | Pending |
-| STORE-04 | — | Pending |
-| STORE-05 | — | Pending |
-| STORE-06 | — | Pending |
-| STORE-07 | — | Pending |
-| STORE-08 | — | Pending |
-| LINK-01 | — | Pending |
-| LINK-02 | — | Pending |
-| LINK-03 | — | Pending |
+| BUND-01 | Phase 9 | Pending |
+| BUND-02 | Phase 9 | Pending |
+| BUND-03 | Phase 9 | Pending |
+| INST-09 | Phase 9 | Pending |
+| CICD-01 | Phase 10 | Pending |
+| CICD-02 | Phase 10 | Pending |
+| CICD-03 | Phase 10 | Pending |
+| INST-01 | Phase 11 | Pending |
+| INST-02 | Phase 11 | Pending |
+| INST-03 | Phase 11 | Pending |
+| INST-04 | Phase 11 | Pending |
+| INST-05 | Phase 11 | Pending |
+| INST-06 | Phase 11 | Pending |
+| INST-07 | Phase 11 | Pending |
+| INST-08 | Phase 11 | Pending |
+| AMO-01 | Phase 12 | Pending |
+| AMO-02 | Phase 12 | Pending |
+| AMO-03 | Phase 12 | Pending |
+| AMO-04 | Phase 12 | Pending |
+| LINK-01 | Phase 12 | Pending |
+| STORE-01 | Phase 13 | Pending |
+| STORE-02 | Phase 13 | Pending |
+| STORE-03 | Phase 13 | Pending |
+| STORE-04 | Phase 13 | Pending |
+| STORE-05 | Phase 13 | Pending |
+| STORE-06 | Phase 13 | Pending |
+| STORE-07 | Phase 13 | Pending |
+| STORE-08 | Phase 13 | Pending |
+| LINK-02 | Phase 13 | Pending |
+| LINK-03 | Phase 13 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30 ⚠️
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 (phase traceability added)*
