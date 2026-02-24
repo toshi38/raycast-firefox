@@ -13,6 +13,12 @@
       "title": "Search Firefox Tabs",
       "description": "Search open Firefox tabs by title or URL",
       "mode": "view"
+    },
+    {
+      "name": "setup-bridge",
+      "title": "Setup Firefox Bridge",
+      "description": "Register the native messaging host with Firefox",
+      "mode": "no-view"
     }
   ],
   "dependencies": {
@@ -25,6 +31,8 @@
     "@types/node": "^22.0.0"
   },
   "scripts": {
+    "prebuild": "echo \"$(cd .. && pwd)\" > assets/project-root.txt",
+    "predev": "echo \"$(cd .. && pwd)\" > assets/project-root.txt",
     "dev": "ray develop",
     "build": "ray build -e dist",
     "lint": "ray lint"

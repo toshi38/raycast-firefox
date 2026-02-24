@@ -5,9 +5,11 @@ import {
   Icon,
   Image,
   Keyboard,
+  LaunchType,
   List,
   Toast,
   closeMainWindow,
+  launchCommand,
   showToast,
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
@@ -337,7 +339,9 @@ async function fetchAllTabs(): Promise<Tab[]> {
       `http://127.0.0.1:${port}/tabs?offset=${allTabs.length}`,
     );
     if (!res.ok) {
-      const body = (await res.json().catch(() => ({ error: "Unknown error" }))) as { error?: string };
+      const body = (await res
+        .json()
+        .catch(() => ({ error: "Unknown error" }))) as { error?: string };
       throw new Error(body.error ?? `HTTP ${res.status}`);
     }
     const json = (await res.json()) as TabsResponse;
@@ -379,19 +383,23 @@ export default function SearchTabs() {
     isLoading,
     revalidate,
     mutate,
-  } = usePromise(() => {
-    // Fast-fail: if port file is gone, no host is listening — skip retries.
-    // Use a distinct error message so classifyError skips pgrep (avoids
-    // race condition during Firefox shutdown where process lingers briefly).
-    const portPath = join(homedir(), ".raycast-firefox", "port");
-    if (!existsSync(portPath)) {
-      return Promise.reject(new Error("port-file-missing"));
-    }
-    return fetchWithRetry(fetchAllTabs);
-  }, [], {
-    onError: handleError,
-    onData: handleData,
-  });
+  } = usePromise(
+    () => {
+      // Fast-fail: if port file is gone, no host is listening — skip retries.
+      // Use a distinct error message so classifyError skips pgrep (avoids
+      // race condition during Firefox shutdown where process lingers briefly).
+      const portPath = join(homedir(), ".raycast-firefox", "port");
+      if (!existsSync(portPath)) {
+        return Promise.reject(new Error("port-file-missing"));
+      }
+      return fetchWithRetry(fetchAllTabs);
+    },
+    [],
+    {
+      onError: handleError,
+      onData: handleData,
+    },
+  );
   // Watch ~/.raycast-firefox/port for changes. The native host writes this
   // file on startup and removes it when Firefox disconnects (stdin EOF).
   // This gives instant push-based detection of both transitions:
@@ -490,7 +498,11 @@ export default function SearchTabs() {
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search Firefox tabs...">
       <List.EmptyView
-        icon={classifiedError ? ERROR_ICONS[classifiedError.mode] : Icon.MagnifyingGlass}
+        icon={
+          classifiedError
+            ? ERROR_ICONS[classifiedError.mode]
+            : Icon.MagnifyingGlass
+        }
         title={classifiedError ? classifiedError.title : "No Results"}
         description={classifiedError?.description}
         actions={
@@ -517,10 +529,9 @@ export default function SearchTabs() {
                   title="Set Up Native Host"
                   icon={Icon.Terminal}
                   onAction={async () => {
-                    await showToast({
-                      style: Toast.Style.Failure,
-                      title: "Setup Not Available Yet",
-                      message: "Install the companion extension in Firefox and register the native host manually",
+                    await launchCommand({
+                      name: "setup-bridge",
+                      type: LaunchType.UserInitiated,
                     });
                   }}
                 />

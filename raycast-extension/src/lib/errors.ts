@@ -45,9 +45,17 @@ export function isFirefoxRunning(): boolean {
  * 3. Everything else -> Unknown
  */
 export function classifyError(error: unknown): ClassifiedError {
-  // Port file missing — host isn't serving. No pgrep needed (avoids race
-  // condition where Firefox process lingers briefly during shutdown).
+  // Port file missing — host isn't serving.
+  // Check if Firefox is running to distinguish "not running" from "not set up".
   if (error instanceof Error && error.message === "port-file-missing") {
+    if (isFirefoxRunning()) {
+      return {
+        mode: FailureMode.HostNotRunning,
+        title: "Native Host Not Connected",
+        description:
+          "The Raycast Firefox helper needs to be set up. Make sure the companion extension is installed and the native host is registered.",
+      };
+    }
     return {
       mode: FailureMode.FirefoxNotRunning,
       title: "Firefox Isn't Running",
