@@ -22,7 +22,22 @@ Quickly find and switch to any open Firefox tab without leaving the keyboard.
 
 ### Active
 
-(None — define with `/gsd:new-milestone`)
+- [ ] Bundle native host as standalone macOS binary
+- [ ] GitHub Actions CI to build and publish bundle on release/tag
+- [ ] Raycast install flow: detect missing host → download from GitHub releases → register
+- [ ] Firefox extension submitted and listed on AMO
+- [ ] Raycast extension submitted to Raycast Store
+- [ ] Cross-linking: each side detects missing pieces and guides user to the other
+
+## Current Milestone: v1.1 Store Publishing & Distribution
+
+**Goal:** Ship to Raycast Store and Firefox AMO so anyone can install without manual setup.
+
+**Target features:**
+- Standalone native host bundle (built in CI)
+- Automated install flow from Raycast (download + register native host, link to AMO)
+- Firefox AMO listing with setup guidance linking to Raycast
+- Raycast Store listing
 
 ### Out of Scope
 
@@ -73,4 +88,4 @@ Known tech debt from v1.0 audit: getPort() duplication, ERRH-02 string coupling,
 | Size-aware pagination (512KB limit) | Firefox native messaging has 1MB limit | ✓ Good — handles 500+ tabs |
 
 ---
-*Last updated: 2026-02-24 after v1.0 milestone*
+*Last updated: 2026-02-24 after v1.1 milestone started*

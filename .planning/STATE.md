@@ -5,35 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** v1.0 shipped. Planning next milestone.
+**Current focus:** v1.1 Store Publishing & Distribution
 
 ## Current Position
 
-Phase: v1.0 complete (8 phases, 16 plans)
-Status: Milestone shipped
-Last activity: 2026-02-24 - Completed v1.0 milestone archival
-
-Progress: [████████████████████████] 16/16 (100%)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-24 — Milestone v1.1 started
 
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (v1.0):**
 - Total plans completed: 16
 - Average duration: 5.5min
 - Total execution time: 1.48 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01 Firefox WebExtension | 2/2 | 7min | 3.5min |
-| 02 Native Messaging Bridge | 3/3 | 20min | 6.7min |
-| 03 Raycast Tab List | 2/2 | 5min | 2.5min |
-| 04 Tab Switching | 1/1 | 15min | 15min |
-| 05 Tab List Polish | 3/3 | 20min | 6.7min |
-| 06 Tab Close Action | 1/1 | 5min | 5min |
-| 07 Error Handling | 2/2 | 6min | 3min |
-| 08 Setup Automation | 2/2 | 17min | 8.5min |
 
 *Updated after each plan completion*
 
@@ -61,5 +47,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed v1.0 milestone archival. All 8 phases complete. Ready for /gsd:new-milestone.
+Stopped at: Starting v1.1 milestone — defining requirements.
 Resume file: None
