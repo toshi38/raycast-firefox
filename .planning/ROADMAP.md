@@ -1,165 +1,40 @@
 # Roadmap: Raycast Firefox
 
-## Overview
+## Milestones
 
-This roadmap delivers a Raycast extension for Firefox tab control, structured as a risk-reduction pipeline. The communication layer (Firefox WebExtension + Native Messaging bridge) is built and validated first because every feature depends on it. Once the pipeline is proven, the Raycast UI, tab actions, visual polish, error handling, and setup automation are layered on incrementally -- each phase delivering an observable, testable capability.
+- ✅ **v1.0 Raycast Firefox Tab Control** — Phases 1-8 (shipped 2026-02-24)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+<details>
+<summary>✅ v1.0 Raycast Firefox Tab Control (Phases 1-8) — SHIPPED 2026-02-24</summary>
 
-Decimal phases appear between their surrounding integers in numeric order.
+- [x] Phase 1: Firefox WebExtension (2/2 plans) — completed 2026-02-07
+- [x] Phase 2: Native Messaging Bridge (3/3 plans) — completed 2026-02-07
+- [x] Phase 3: Raycast Tab List (2/2 plans) — completed 2026-02-07
+- [x] Phase 4: Tab Switching (1/1 plan) — completed 2026-02-08
+- [x] Phase 5: Tab List Polish (3/3 plans) — completed 2026-02-09
+- [x] Phase 6: Tab Close Action (1/1 plan) — completed 2026-02-10
+- [x] Phase 7: Error Handling (2/2 plans) — completed 2026-02-14
+- [x] Phase 8: Setup Automation (2/2 plans) — completed 2026-02-23
 
-- [x] **Phase 1: Firefox WebExtension** - Companion extension that exposes tab data via the browser.tabs API
-- [x] **Phase 2: Native Messaging Bridge** - Native Messaging Host bridging Firefox to localhost HTTP
-- [x] **Phase 3: Raycast Tab List** - Raycast extension displaying open Firefox tabs with search
-- [x] **Phase 4: Tab Switching** - User can select a tab in Raycast and Firefox brings it to front
-- [x] **Phase 5: Tab List Polish** - Active tab indicator and favicons for visual completeness
-- [x] **Phase 6: Tab Close Action** - Close a tab from Raycast without switching to it
-- [ ] **Phase 7: Error Handling** - Graceful messages when Firefox, WebExtension, or host is unavailable
-- [ ] **Phase 8: Setup Automation** - Automated command to register native messaging host with Firefox
+See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 
-## Phase Details
-
-### Phase 1: Firefox WebExtension
-**Goal**: A working Firefox extension that can query all open tabs and respond to native messages
-**Depends on**: Nothing (first phase)
-**Requirements**: COMM-01
-**Success Criteria** (what must be TRUE):
-  1. Firefox WebExtension installs and loads without errors in Firefox
-  2. WebExtension background script can enumerate all open tabs (titles, URLs, favicons, active state) via browser.tabs.query
-  3. WebExtension listens for incoming native messages and responds with tab data as JSON
-  4. WebExtension can receive a "switch tab" command and activate the specified tab via browser.tabs.update and browser.windows.update
-**Plans**: 2 plans
-
-Plans:
-- [x] 01-01-PLAN.md -- Core extension: manifest, background script with all command handlers, icons
-- [x] 01-02-PLAN.md -- Debug page, web-ext tooling, and Firefox load verification
-
-### Phase 2: Native Messaging Bridge
-**Goal**: A Node.js Native Messaging Host that bridges Firefox's native messaging protocol to a localhost HTTP server
-**Depends on**: Phase 1
-**Requirements**: COMM-02, COMM-03
-**Success Criteria** (what must be TRUE):
-  1. Native Messaging Host reads and writes length-prefixed JSON over stdin/stdout per Firefox's protocol spec
-  2. Host runs a localhost HTTP server that accepts requests from Raycast
-  3. HTTP GET to /tabs returns JSON array of all open Firefox tabs (fetched via native messaging from the WebExtension)
-  4. HTTP POST to /switch with tabId/windowId triggers tab switch in Firefox via the WebExtension
-  5. Full round-trip works: curl to localhost returns live tab data from Firefox
-**Plans**: 3 plans
-
-Plans:
-- [x] 02-01-PLAN.md -- Project scaffold, logging infrastructure, and native messaging binary protocol
-- [x] 02-02-PLAN.md -- Process lifecycle, request-response bridge, HTTP server with endpoints, install script
-- [x] 02-03-PLAN.md -- End-to-end integration verification (human checkpoint)
-
-### Phase 3: Raycast Tab List
-**Goal**: Users can invoke a Raycast command and see a searchable list of all open Firefox tabs
-**Depends on**: Phase 2
-**Requirements**: TABS-01, TABS-02
-**Success Criteria** (what must be TRUE):
-  1. User can invoke "Search Firefox Tabs" command from Raycast
-  2. Raycast displays a list of all open Firefox tabs with title and URL
-  3. User can type to fuzzy-filter tabs by title or URL
-  4. Tab list updates when Raycast command is re-invoked (reflects current Firefox state)
-**Plans**: 2 plans
-
-Plans:
-- [x] 03-01-PLAN.md -- Raycast extension scaffold + Search Firefox Tabs command implementation
-- [x] 03-02-PLAN.md -- End-to-end verification in Raycast (human checkpoint)
-
-### Phase 4: Tab Switching
-**Goal**: Users can select a tab in Raycast and Firefox instantly brings that tab to the front
-**Depends on**: Phase 3
-**Requirements**: ACTN-01
-**Success Criteria** (what must be TRUE):
-  1. User can press Enter on a tab in the Raycast list to switch to it
-  2. Firefox comes to the foreground with the selected tab active
-  3. If the tab is in a different Firefox window, that window comes to front and the tab activates
-  4. Raycast closes after switching (standard Raycast behavior)
-**Plans**: 1 plan
-
-Plans:
-- [x] 04-01-PLAN.md -- Add ActionPanel with Switch to Tab action + human verification
-
-### Phase 5: Tab List Polish
-**Goal**: The tab list looks polished with visual indicators that match the quality of Chrome/Safari Raycast extensions
-**Depends on**: Phase 3
-**Requirements**: TABS-03, TABS-04
-**Success Criteria** (what must be TRUE):
-  1. The currently active Firefox tab is visually distinguished in the Raycast list (icon or accessory)
-  2. Each tab displays its favicon next to the title
-  3. Tabs without favicons show a sensible fallback (default icon)
-**Plans**: 3 plans
-
-Plans:
-- [x] 05-01-PLAN.md -- Tab data enrichment (lastAccessed, colorCode) + UI polish (accessories, sorting, fallback icons)
-- [x] 05-02-PLAN.md -- Native host favicon cache module + HTTP endpoint
-- [x] 05-03-PLAN.md -- Wire favicons into Raycast extension + human verification
-
-### Phase 6: Tab Close Action
-**Goal**: Users can close a Firefox tab directly from Raycast without switching to it
-**Depends on**: Phase 4
-**Requirements**: ACTN-02
-**Success Criteria** (what must be TRUE):
-  1. User can select "Close Tab" from the action menu on any tab in the Raycast list
-  2. The tab closes in Firefox without Firefox coming to the foreground
-  3. The Raycast list refreshes to reflect the closed tab
-**Plans**: 1 plan
-
-Plans:
-- [x] 06-01-PLAN.md -- Native host /close endpoint + Raycast Close Tab action with optimistic removal + human verification
-
-### Phase 7: Error Handling
-**Goal**: Users see clear, actionable messages when something in the communication chain is broken
-**Depends on**: Phase 3
-**Requirements**: ERRH-01, ERRH-02, ERRH-03
-**Success Criteria** (what must be TRUE):
-  1. When Firefox is not running, Raycast shows "Firefox is not running" with an option to launch Firefox
-  2. When the companion WebExtension is not installed, Raycast shows a message explaining how to install it
-  3. When the native messaging host is not registered, Raycast shows a message explaining how to set it up
-  4. Error states are detected automatically (user does not need to diagnose the issue themselves)
-**Plans**: 2 plans
-
-Plans:
-- [ ] 07-01-PLAN.md -- Shared error utilities: FailureMode enum, classifyError, isFirefoxRunning, fetchWithRetry, showActionError
-- [ ] 07-02-PLAN.md -- Wire error handling into search-tabs.tsx: retry, ErrorEmptyView, action toasts + human verification
-
-### Phase 8: Setup Automation
-**Goal**: Users can run a single Raycast command to register the native messaging host with Firefox
-**Depends on**: Phase 2
-**Requirements**: COMM-04
-**Success Criteria** (what must be TRUE):
-  1. Raycast extension includes a "Setup Firefox Integration" command
-  2. Running the command creates the native messaging host manifest in the correct Firefox location
-  3. The manifest contains valid absolute paths and correct extension ID
-  4. After running setup, the communication chain works without manual file editing
-**Plans**: TBD
-
-Plans:
-- [ ] 08-01: Manifest template with absolute path resolution
-- [ ] 08-02: Raycast setup command that writes manifest to ~/Library/Application Support/Mozilla/NativeMessagingHosts/
-- [ ] 08-03: Post-setup validation (verify manifest is correct and host is reachable)
+</details>
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
-Note: Phase 5 depends on Phase 3 (not 4), so Phases 4 and 5 could execute in parallel. Phase 7 depends on Phase 3. Phase 8 depends on Phase 2.
-
-| Phase | Plans Complete | Status | Completed |
-|-------|---------------|--------|-----------|
-| 1. Firefox WebExtension | 2/2 | Complete | 2026-02-07 |
-| 2. Native Messaging Bridge | 3/3 | Complete | 2026-02-07 |
-| 3. Raycast Tab List | 2/2 | Complete | 2026-02-07 |
-| 4. Tab Switching | 1/1 | Complete | 2026-02-08 |
-| 5. Tab List Polish | 3/3 | Complete | 2026-02-09 |
-| 6. Tab Close Action | 1/1 | Complete | 2026-02-10 |
-| 7. Error Handling | 0/2 | Not started | - |
-| 8. Setup Automation | 0/3 | Not started | - |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|---------------|--------|-----------|
+| 1. Firefox WebExtension | v1.0 | 2/2 | Complete | 2026-02-07 |
+| 2. Native Messaging Bridge | v1.0 | 3/3 | Complete | 2026-02-07 |
+| 3. Raycast Tab List | v1.0 | 2/2 | Complete | 2026-02-07 |
+| 4. Tab Switching | v1.0 | 1/1 | Complete | 2026-02-08 |
+| 5. Tab List Polish | v1.0 | 3/3 | Complete | 2026-02-09 |
+| 6. Tab Close Action | v1.0 | 1/1 | Complete | 2026-02-10 |
+| 7. Error Handling | v1.0 | 2/2 | Complete | 2026-02-14 |
+| 8. Setup Automation | v1.0 | 2/2 | Complete | 2026-02-23 |
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-02-10 (Phase 6 complete)*
+*Last updated: 2026-02-24 (v1.0 milestone archived)*
