@@ -8,8 +8,7 @@
     "start:pretty": "node host.js 2>&1 | pino-pretty"
   },
   "dependencies": {
-    "pino": "^9",
-    "pino-roll": "^1"
+    "pino": "^9"
   },
   "devDependencies": {
     "pino-pretty": "^13"
