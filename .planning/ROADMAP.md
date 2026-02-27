@@ -59,13 +59,14 @@ Plans:
 **Depends on**: Phase 9
 **Requirements**: CICD-01, CICD-02, CICD-03
 **Success Criteria** (what must be TRUE):
-  1. Pushing a `v*` tag to GitHub triggers a workflow that builds the native host bundle on a macOS ARM64 runner
+  1. Pushing to main with changesets triggers a workflow that builds the native host bundle on a macOS ARM64 runner, creates version tags, and publishes a GitHub Release
   2. The GitHub Release contains the bundle JS, wrapper script, and SHA256 checksum file as downloadable assets
   3. The SHA256 checksum in the release matches the actual hash of the downloaded bundle file
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01-PLAN.md — Workspace setup, changesets config, and CI workflow
+- [ ] 10-02-PLAN.md — Release workflow with changesets and GitHub Release asset upload
 
 ### Phase 11: Raycast Install Flow
 **Goal**: Any Raycast user can install the native host through the setup command without touching a terminal
