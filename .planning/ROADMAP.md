@@ -130,7 +130,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 7. Error Handling | v1.0 | 2/2 | Complete | 2026-02-14 |
 | 8. Setup Automation | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 9. Native Host Bundling | v1.1 | 0/? | Not started | - |
-| 10. CI/CD Pipeline | v1.1 | 0/? | Not started | - |
+| 10. CI/CD Pipeline | 1/2 | In Progress|  | - |
 | 11. Raycast Install Flow | v1.1 | 0/? | Not started | - |
 | 12. Firefox AMO Submission | v1.1 | 0/? | Not started | - |
 | 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |

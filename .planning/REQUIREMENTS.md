@@ -15,8 +15,8 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### CI/CD
 
-- [ ] **CICD-01**: GitHub Actions workflow triggers on push to main (changesets handles versioning/tagging; tag-triggered workflows cannot fire from GITHUB_TOKEN-created tags)
-- [ ] **CICD-02**: CI builds native host bundle on macOS ARM64 runner
+- [x] **CICD-01**: GitHub Actions workflow triggers on push to main (changesets handles versioning/tagging; tag-triggered workflows cannot fire from GITHUB_TOKEN-created tags)
+- [x] **CICD-02**: CI builds native host bundle on macOS ARM64 runner
 - [ ] **CICD-03**: CI publishes bundle + SHA256 checksum as GitHub Release assets
 
 ### Install Flow
@@ -90,8 +90,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUND-02 | Phase 9 | Complete |
 | BUND-03 | Phase 9 | Complete |
 | INST-09 | Phase 9 | Complete |
-| CICD-01 | Phase 10 | Pending |
-| CICD-02 | Phase 10 | Pending |
+| CICD-01 | Phase 10 | Complete |
+| CICD-02 | Phase 10 | Complete |
 | CICD-03 | Phase 10 | Pending |
 | INST-01 | Phase 11 | Pending |
 | INST-02 | Phase 11 | Pending |

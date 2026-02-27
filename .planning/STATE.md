@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 9 — Native Host Bundling
+**Current focus:** Phase 10 — CI/CD Pipeline
 
 ## Current Position
 
-Phase: 9 of 13 (Native Host Bundling)
-Plan: 2 of 2 in current phase
-Status: Phase 9 complete
-Last activity: 2026-02-27 — Completed 09-02: Shell wrapper & path resolution
+Phase: 10 of 13 (CI/CD Pipeline)
+Plan: 1 of 2 in current phase
+Status: Plan 10-01 complete
+Last activity: 2026-02-27 — Completed 10-01: Workspace & CI Foundation
 
-Progress: [██░░░░░░░░] 20% (v1.1)
+Progress: [███░░░░░░░] 30% (v1.1)
 
 ## Performance Metrics
 
@@ -37,9 +37,9 @@ Progress: [██░░░░░░░░] 20% (v1.1)
 - Total execution time: 1.48 hours
 
 **Velocity (v1.1):**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 2min
-- Total execution time: 4min
+- Total execution time: 6min
 
 *Updated after each plan completion*
 
@@ -58,6 +58,9 @@ Recent decisions affecting current work:
 - [Phase 09]: Sync pino.destination replaces pino-roll worker threads for bundle compatibility
 - [Phase 09]: Log rotation runs at startup only (not per-write) for simplicity
 - [Phase 09]: Bundle kept unminified (160KB) for debuggability
+- [10-01]: PR-only CI trigger; release workflow (10-02) handles main-push CI as prerequisite job
+- [10-01]: Raycast extension CI steps disabled pending ray CLI availability on GitHub Actions runners
+- [10-01]: privatePackages.tag=true for changeset publish git tag creation
 
 ### Pending Todos
 
@@ -78,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 09-01-PLAN.md. All Phase 9 plans complete (01 + 02).
+Stopped at: Completed 10-01-PLAN.md
 Resume file: None
