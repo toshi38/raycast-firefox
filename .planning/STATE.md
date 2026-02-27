@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Store Publishing & Distribution
 status: unknown
-last_updated: "2026-02-27T13:56:18.619Z"
+last_updated: "2026-02-27T14:00:08.816Z"
 progress:
   total_phases: 1
   completed_phases: 1
