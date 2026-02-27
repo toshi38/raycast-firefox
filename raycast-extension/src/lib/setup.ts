@@ -23,24 +23,43 @@ export function isFirefoxInstalled(): boolean {
 // -- Path resolution --
 
 /**
+ * Production path: installed bundle location.
+ * Phase 11 (installer) will place files here.
+ */
+const PRODUCTION_RUN_SH = join(homedir(), ".raycast-firefox", "bin", "run.sh");
+
+/**
  * Resolve the absolute path to native-host/run.sh.
  *
- * Reads the project root from assets/project-root.txt (written at build time
- * by the prebuild script) and resolves native-host/run.sh from there.
+ * Dual-mode resolution:
+ * 1. Dev path: if assets/project-root.txt exists (written by prebuild script),
+ *    resolve native-host/run.sh from the project root. This preserves the
+ *    development workflow exactly.
+ * 2. Production path: if ~/.raycast-firefox/bin/run.sh exists (installed bundle),
+ *    use it. This enables the extension to work when installed from the Store
+ *    without a git checkout.
+ * 3. Neither found: throw an error guiding the user to run setup.
  */
 export function resolveNativeHostPath(): string {
+  // Dev path: project-root.txt exists -> use repo checkout
   const rootFile = join(environment.assetsPath, "project-root.txt");
-  if (!existsSync(rootFile)) {
-    throw new Error(
-      "Missing assets/project-root.txt. Rebuild the extension with npm run build.",
-    );
+  if (existsSync(rootFile)) {
+    const projectRoot = readFileSync(rootFile, "utf-8").trim();
+    const devPath = join(projectRoot, "native-host", "run.sh");
+    if (existsSync(devPath)) {
+      return resolve(devPath);
+    }
   }
-  const projectRoot = readFileSync(rootFile, "utf-8").trim();
-  const candidate = join(projectRoot, "native-host", "run.sh");
-  if (!existsSync(candidate)) {
-    throw new Error(`Could not locate native-host/run.sh at ${candidate}`);
+
+  // Production path: installed bundle
+  if (existsSync(PRODUCTION_RUN_SH)) {
+    return resolve(PRODUCTION_RUN_SH);
   }
-  return resolve(candidate);
+
+  // Neither found
+  throw new Error(
+    "Native host not found. Run the 'Setup Firefox Bridge' command to install it.",
+  );
 }
 
 // -- Manifest generation --
