@@ -15,7 +15,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### CI/CD
 
-- [ ] **CICD-01**: GitHub Actions workflow triggers on `v*` tag push
+- [ ] **CICD-01**: GitHub Actions workflow triggers on push to main (changesets handles versioning/tagging; tag-triggered workflows cannot fire from GITHUB_TOKEN-created tags)
 - [ ] **CICD-02**: CI builds native host bundle on macOS ARM64 runner
 - [ ] **CICD-03**: CI publishes bundle + SHA256 checksum as GitHub Release assets
 
