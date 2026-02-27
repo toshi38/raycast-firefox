@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Store Publishing & Distribution
+status: unknown
+last_updated: "2026-02-27T13:56:18.619Z"
+progress:
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+---
+
 # Project State
 
 ## Project Reference
@@ -14,7 +27,7 @@ Plan: 2 of 2 in current phase
 Status: Phase 9 complete
 Last activity: 2026-02-27 — Completed 09-02: Shell wrapper & path resolution
 
-Progress: [█░░░░░░░░░] 10% (v1.1)
+Progress: [██░░░░░░░░] 20% (v1.1)
 
 ## Performance Metrics
 
@@ -24,9 +37,9 @@ Progress: [█░░░░░░░░░] 10% (v1.1)
 - Total execution time: 1.48 hours
 
 **Velocity (v1.1):**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 2min
-- Total execution time: 2min
+- Total execution time: 4min
 
 *Updated after each plan completion*
 
@@ -42,6 +55,9 @@ Recent decisions affecting current work:
 - [09-02]: Raycast bundled Node.js gets highest priority in discovery chain
 - [09-02]: Version check rejects Node.js < 18 with logging rather than silent failure
 - [09-02]: Production path ~/.raycast-firefox/bin/run.sh hardcoded as module-level constant
+- [Phase 09]: Sync pino.destination replaces pino-roll worker threads for bundle compatibility
+- [Phase 09]: Log rotation runs at startup only (not per-write) for simplicity
+- [Phase 09]: Bundle kept unminified (160KB) for debuggability
 
 ### Pending Todos
 
@@ -62,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 09-02-PLAN.md. Phase 9 plans complete.
+Stopped at: Completed 09-01-PLAN.md. All Phase 9 plans complete (01 + 02).
 Resume file: None

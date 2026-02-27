@@ -9,8 +9,8 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### Bundling
 
-- [ ] **BUND-01**: Native host builds into a single JS file via esbuild with all dependencies inlined
-- [ ] **BUND-02**: Pino logging uses sync destination instead of pino-roll worker threads
+- [x] **BUND-01**: Native host builds into a single JS file via esbuild with all dependencies inlined
+- [x] **BUND-02**: Pino logging uses sync destination instead of pino-roll worker threads
 - [x] **BUND-03**: Shell wrapper discovers Node.js via priority chain (Raycast bundled → Homebrew ARM → Homebrew Intel → nvm → system PATH)
 
 ### CI/CD
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUND-01 | Phase 9 | Pending |
-| BUND-02 | Phase 9 | Pending |
+| BUND-01 | Phase 9 | Complete |
+| BUND-02 | Phase 9 | Complete |
 | BUND-03 | Phase 9 | Complete |
 | INST-09 | Phase 9 | Complete |
 | CICD-01 | Phase 10 | Pending |
