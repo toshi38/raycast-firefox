@@ -32,7 +32,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - Decimal phases (9.1, 9.2): Urgent insertions (marked with INSERTED)
 
 - [ ] **Phase 9: Native Host Bundling** - Bundle native host into a single distributable JS file and eliminate git checkout dependency
-- [ ] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions
+- [x] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions (completed 2026-02-27)
 - [ ] **Phase 11: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo
 - [ ] **Phase 12: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org
 - [ ] **Phase 13: Raycast Store Submission** - Get Raycast extension listed in the Raycast Store with all required metadata
@@ -130,7 +130,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 7. Error Handling | v1.0 | 2/2 | Complete | 2026-02-14 |
 | 8. Setup Automation | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 9. Native Host Bundling | v1.1 | 0/? | Not started | - |
-| 10. CI/CD Pipeline | 1/2 | In Progress|  | - |
+| 10. CI/CD Pipeline | 2/2 | Complete   | 2026-02-27 | - |
 | 11. Raycast Install Flow | v1.1 | 0/? | Not started | - |
 | 12. Firefox AMO Submission | v1.1 | 0/? | Not started | - |
 | 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |

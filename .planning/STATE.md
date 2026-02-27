@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 10 of 13 (CI/CD Pipeline)
-Plan: 1 of 2 in current phase
-Status: Plan 10-01 complete
-Last activity: 2026-02-27 — Completed 10-01: Workspace & CI Foundation
+Plan: 2 of 2 in current phase
+Status: Phase 10 complete
+Last activity: 2026-02-27 — Completed 10-02: Release Workflow
 
-Progress: [███░░░░░░░] 30% (v1.1)
+Progress: [████░░░░░░] 40% (v1.1)
 
 ## Performance Metrics
 
@@ -37,9 +37,9 @@ Progress: [███░░░░░░░] 30% (v1.1)
 - Total execution time: 1.48 hours
 
 **Velocity (v1.1):**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 2min
-- Total execution time: 6min
+- Total execution time: 8min
 
 *Updated after each plan completion*
 
@@ -61,6 +61,10 @@ Recent decisions affecting current work:
 - [10-01]: PR-only CI trigger; release workflow (10-02) handles main-push CI as prerequisite job
 - [10-01]: Raycast extension CI steps disabled pending ray CLI availability on GitHub Actions runners
 - [10-01]: privatePackages.tag=true for changeset publish git tag creation
+- [10-02]: createGithubReleases: false — changesets built-in release creation does not work for private packages
+- [10-02]: Fallback tag detection covers uncertainty about changesets published output for private-package-only repos
+- [10-02]: shasum -a 256 used instead of sha256sum for macOS runner compatibility
+- [10-02]: Post-release verification via gh release view ensures silent failures are caught
 
 ### Pending Todos
 
@@ -81,5 +85,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 10-01-PLAN.md
+Stopped at: Completed 10-02-PLAN.md (Phase 10 complete)
 Resume file: None
