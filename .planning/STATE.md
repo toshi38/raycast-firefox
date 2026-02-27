@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 9 of 13 (Native Host Bundling)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-02-24 — v1.1 roadmap created (5 phases, 30 requirements mapped)
+Plan: 2 of 2 in current phase
+Status: Phase 9 complete
+Last activity: 2026-02-27 — Completed 09-02: Shell wrapper & path resolution
 
-Progress: [░░░░░░░░░░] 0% (v1.1)
+Progress: [█░░░░░░░░░] 10% (v1.1)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [░░░░░░░░░░] 0% (v1.1)
 - Total execution time: 1.48 hours
 
 **Velocity (v1.1):**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 1
+- Average duration: 2min
+- Total execution time: 2min
 
 *Updated after each plan completion*
 
@@ -39,6 +39,9 @@ Recent decisions affecting current work:
 
 - [v1.1 roadmap]: INST-09 (eliminate project-root.txt) assigned to Phase 9 bundling — it's the architectural decoupling that enables all distribution work
 - [v1.1 roadmap]: Phase 12 (AMO) depends only on Phase 9 — can overlap with Phases 10-11 to parallelize review wait time
+- [09-02]: Raycast bundled Node.js gets highest priority in discovery chain
+- [09-02]: Version check rejects Node.js < 18 with logging rather than silent failure
+- [09-02]: Production path ~/.raycast-firefox/bin/run.sh hardcoded as module-level constant
 
 ### Pending Todos
 
@@ -58,6 +61,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: v1.1 roadmap created. Ready to plan Phase 9.
+Last session: 2026-02-27
+Stopped at: Completed 09-02-PLAN.md. Phase 9 plans complete.
 Resume file: None

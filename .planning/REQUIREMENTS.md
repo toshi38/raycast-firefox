@@ -11,7 +11,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 - [ ] **BUND-01**: Native host builds into a single JS file via esbuild with all dependencies inlined
 - [ ] **BUND-02**: Pino logging uses sync destination instead of pino-roll worker threads
-- [ ] **BUND-03**: Shell wrapper discovers Node.js via priority chain (Raycast bundled → Homebrew ARM → Homebrew Intel → nvm → system PATH)
+- [x] **BUND-03**: Shell wrapper discovers Node.js via priority chain (Raycast bundled → Homebrew ARM → Homebrew Intel → nvm → system PATH)
 
 ### CI/CD
 
@@ -29,7 +29,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 - [ ] **INST-06**: Setup command creates Node.js symlink for reliable wrapper script execution
 - [ ] **INST-07**: Setup command verifies full chain after installation
 - [ ] **INST-08**: Installed bundle tracks version via `version.txt`
-- [ ] **INST-09**: `project-root.txt` dependency eliminated — extension works without git checkout
+- [x] **INST-09**: `project-root.txt` dependency eliminated — extension works without git checkout
 
 ### Firefox AMO
 
@@ -88,8 +88,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | BUND-01 | Phase 9 | Pending |
 | BUND-02 | Phase 9 | Pending |
-| BUND-03 | Phase 9 | Pending |
-| INST-09 | Phase 9 | Pending |
+| BUND-03 | Phase 9 | Complete |
+| INST-09 | Phase 9 | Complete |
 | CICD-01 | Phase 10 | Pending |
 | CICD-02 | Phase 10 | Pending |
 | CICD-03 | Phase 10 | Pending |
