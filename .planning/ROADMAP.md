@@ -48,11 +48,11 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
   2. The bundle uses synchronous pino logging (no worker threads) and logs correctly to `~/.raycast-firefox/logs/`
   3. The shell wrapper script discovers Node.js via priority chain (Raycast bundled, Homebrew ARM, Homebrew Intel, nvm, system PATH) and launches the bundle
   4. The Raycast extension works without `project-root.txt` — setup and tab search function when the extension is installed outside a git checkout
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md — Sync logging migration and esbuild bundle
+- [ ] 09-02-PLAN.md — Wrapper script rewrite and dual-mode path resolution
 
 ### Phase 10: CI/CD Pipeline
 **Goal**: Every tagged release automatically produces verified, downloadable native host artifacts
