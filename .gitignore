@@ -1,4 +1,5 @@
 # Dependencies
+node_modules/
 extension/node_modules/
 native-host/node_modules/
 
