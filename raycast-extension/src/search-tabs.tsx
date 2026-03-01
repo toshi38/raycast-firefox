@@ -520,13 +520,13 @@ export default function SearchTabs() {
               )}
               {classifiedError.mode === FailureMode.ExtensionNotInstalled && (
                 <Action.OpenInBrowser
-                  title="Install WebExtension"
+                  title="Install Webextension"
                   url="https://addons.mozilla.org/en-US/firefox/addon/raycast-firefox/"
                 />
               )}
               {classifiedError.mode === FailureMode.HostNotRunning && (
                 <Action
-                  title="Set Up Native Host"
+                  title="Set up Native Host"
                   icon={Icon.Terminal}
                   onAction={async () => {
                     await launchCommand({
