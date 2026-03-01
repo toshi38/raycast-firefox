@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: Store Publishing & Distribution
+status: unknown
+last_updated: "2026-02-27T20:00:06.683Z"
+progress:
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
+---
+
 # Project State
 
 ## Project Reference
@@ -5,35 +18,28 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** v1.0 shipped. Planning next milestone.
+**Current focus:** Phase 10 — CI/CD Pipeline
 
 ## Current Position
 
-Phase: v1.0 complete (8 phases, 16 plans)
-Status: Milestone shipped
-Last activity: 2026-02-24 - Completed v1.0 milestone archival
+Phase: 10 of 13 (CI/CD Pipeline)
+Plan: 2 of 2 in current phase
+Status: Phase 10 complete
+Last activity: 2026-02-27 — Completed 10-02: Release Workflow
 
-Progress: [████████████████████████] 16/16 (100%)
+Progress: [████░░░░░░] 40% (v1.1)
 
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (v1.0):**
 - Total plans completed: 16
 - Average duration: 5.5min
 - Total execution time: 1.48 hours
 
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01 Firefox WebExtension | 2/2 | 7min | 3.5min |
-| 02 Native Messaging Bridge | 3/3 | 20min | 6.7min |
-| 03 Raycast Tab List | 2/2 | 5min | 2.5min |
-| 04 Tab Switching | 1/1 | 15min | 15min |
-| 05 Tab List Polish | 3/3 | 20min | 6.7min |
-| 06 Tab Close Action | 1/1 | 5min | 5min |
-| 07 Error Handling | 2/2 | 6min | 3min |
-| 08 Setup Automation | 2/2 | 17min | 8.5min |
+**Velocity (v1.1):**
+- Total plans completed: 4
+- Average duration: 2min
+- Total execution time: 8min
 
 *Updated after each plan completion*
 
@@ -42,6 +48,23 @@ Progress: [███████████████████████
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [v1.1 roadmap]: INST-09 (eliminate project-root.txt) assigned to Phase 9 bundling — it's the architectural decoupling that enables all distribution work
+- [v1.1 roadmap]: Phase 12 (AMO) depends only on Phase 9 — can overlap with Phases 10-11 to parallelize review wait time
+- [09-02]: Raycast bundled Node.js gets highest priority in discovery chain
+- [09-02]: Version check rejects Node.js < 18 with logging rather than silent failure
+- [09-02]: Production path ~/.raycast-firefox/bin/run.sh hardcoded as module-level constant
+- [Phase 09]: Sync pino.destination replaces pino-roll worker threads for bundle compatibility
+- [Phase 09]: Log rotation runs at startup only (not per-write) for simplicity
+- [Phase 09]: Bundle kept unminified (160KB) for debuggability
+- [10-01]: PR-only CI trigger; release workflow (10-02) handles main-push CI as prerequisite job
+- [10-01]: Raycast extension CI steps disabled pending ray CLI availability on GitHub Actions runners
+- [10-01]: privatePackages.tag=true for changeset publish git tag creation
+- [10-02]: createGithubReleases: false — changesets built-in release creation does not work for private packages
+- [10-02]: Fallback tag detection covers uncertainty about changesets published output for private-package-only repos
+- [10-02]: shasum -a 256 used instead of sha256sum for macOS runner compatibility
+- [10-02]: Post-release verification via gh release view ensures silent failures are caught
 
 ### Pending Todos
 
@@ -49,8 +72,9 @@ None.
 
 ### Blockers/Concerns
 
-- Native Messaging Host port selection (26394) not yet validated across machines
-- AMO review timing unknown (submit Firefox extension early when ready)
+- Raycast binary download policy ambiguity: bundle in assets/ vs. download from GitHub Releases (resolve during Phase 11 planning)
+- AMO `data_collection_permissions` value: declare "none" first, fallback to "browsingActivity" if rejected
+- AMO review timing unknown — submit early to parallelize
 
 ### Quick Tasks Completed
 
@@ -60,6 +84,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: Completed v1.0 milestone archival. All 8 phases complete. Ready for /gsd:new-milestone.
+Last session: 2026-02-27
+Stopped at: Completed 10-02-PLAN.md (Phase 10 complete)
 Resume file: None

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Build & Lint
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build native host bundle
+        run: npm run build --workspace=native-host
+
+      - name: Verify native host bundle
+        run: test -f native-host/dist/host.bundle.js
+
+      - name: Lint Firefox extension
+        run: npm run lint --workspace=extension
+
+      # TODO: Enable when ray CLI availability on CI is confirmed
+      # The ray CLI is installed via the Raycast desktop app, not via npm.
+      # It is not available on GitHub Actions macOS runners.
+      - name: Lint Raycast extension
+        if: false
+        run: npm run lint --workspace=raycast-extension
+
+      # TODO: Enable when ray CLI availability on CI is confirmed
+      - name: Build Raycast extension
+        if: false
+        run: npm run build --workspace=raycast-extension

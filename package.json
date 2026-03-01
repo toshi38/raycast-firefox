@@ -1,0 +1,18 @@
+{
+  "name": "raycast-firefox",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "extension",
+    "native-host",
+    "raycast-extension"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.29",
+    "@changesets/changelog-github": "^0.5"
+  },
+  "scripts": {
+    "version": "changeset version",
+    "release": "changeset publish"
+  }
+}

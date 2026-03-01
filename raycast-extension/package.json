@@ -6,6 +6,7 @@
   "icon": "icon.png",
   "author": "stelau",
   "categories": ["Applications", "Productivity"],
+  "version": "1.0.0",
   "license": "MIT",
   "commands": [
     {

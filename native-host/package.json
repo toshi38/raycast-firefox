@@ -5,13 +5,14 @@
   "main": "host.js",
   "scripts": {
     "start": "node host.js",
-    "start:pretty": "node host.js 2>&1 | pino-pretty"
+    "start:pretty": "node host.js 2>&1 | pino-pretty",
+    "build": "node esbuild.config.js"
   },
   "dependencies": {
-    "pino": "^9",
-    "pino-roll": "^1"
+    "pino": "^9"
   },
   "devDependencies": {
+    "esbuild": "^0.27.3",
     "pino-pretty": "^13"
   }
 }

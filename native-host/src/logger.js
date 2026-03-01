@@ -1,22 +1,15 @@
 'use strict';
 
 const pino = require('pino');
-const path = require('path');
-const os = require('os');
+const { rotateIfNeeded, LOG_DIR, LOG_FILE } = require('./log-rotation');
 
-const LOG_DIR = path.join(os.homedir(), '.raycast-firefox', 'logs');
+// Rotate logs before creating the pino destination
+rotateIfNeeded();
 
-const transport = pino.transport({
-  target: 'pino-roll',
-  options: {
-    file: path.join(LOG_DIR, 'host.log'),
-    size: '5m',
-    frequency: 'daily',
-    mkdir: true,
-    limit: {
-      count: 5,
-    },
-  },
+const dest = pino.destination({
+  dest: LOG_FILE,
+  mkdir: true,
+  sync: true,
 });
 
 const logger = pino(
@@ -26,7 +19,7 @@ const logger = pino(
       level: (label) => ({ level: label }),
     },
   },
-  transport,
+  dest,
 );
 
 /**
