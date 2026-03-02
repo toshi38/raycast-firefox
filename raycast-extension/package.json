@@ -5,8 +5,11 @@
   "description": "Search and switch Firefox tabs from Raycast",
   "icon": "icon.png",
   "author": "stelau",
-  "categories": ["Applications", "Productivity"],
-  "version": "1.0.0",
+  "categories": [
+    "Applications",
+    "Productivity"
+  ],
+  "version": "1.1.0",
   "license": "MIT",
   "commands": [
     {
