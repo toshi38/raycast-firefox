@@ -10,7 +10,6 @@ concurrency:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   ci:
@@ -69,74 +68,72 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build native host bundle
-        run: npm run build --workspace=native-host
-
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          publish: npx changeset publish
-          version: npx changeset version
-          commit: "chore: version packages"
-          title: "chore: version packages"
-          createGithubReleases: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Detect release condition
-        id: detect-release
+      - name: Check for changesets
+        id: check
         run: |
-          # Primary: trust changesets published output
-          PUBLISHED="${{ steps.changesets.outputs.published }}"
-          if [ "$PUBLISHED" = "true" ]; then
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-            echo "Release detected via changesets published output"
+          COUNT=$(find .changeset -name '*.md' ! -name 'README.md' | wc -l | tr -d ' ')
+          if [ "$COUNT" -gt "0" ]; then
+            echo "has_changesets=true" >> "$GITHUB_OUTPUT"
+            echo "Found $COUNT changeset(s)"
           else
-            # Fallback: check if changesets just created a native-host tag on HEAD
-            NH_TAG=$(git tag --points-at HEAD | grep '^native-host@' || true)
-            if [ -n "$NH_TAG" ]; then
-              echo "should_release=true" >> "$GITHUB_OUTPUT"
-              echo "Release detected via fallback tag detection: $NH_TAG"
-            else
-              echo "should_release=false" >> "$GITHUB_OUTPUT"
-              echo "No release detected"
-            fi
+            echo "has_changesets=false" >> "$GITHUB_OUTPUT"
+            echo "No changesets found, skipping release"
           fi
 
+      - name: Version packages
+        if: steps.check.outputs.has_changesets == 'true'
+        run: npx changeset version
+
+      - name: Commit version bumps
+        if: steps.check.outputs.has_changesets == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: version packages"
+
+      - name: Create tags
+        id: tag
+        if: steps.check.outputs.has_changesets == 'true'
+        run: |
+          VERSION=$(node -p "require('./native-host/package.json').version")
+          TAG="native-host@$VERSION"
+          git tag "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Tagged $TAG"
+
+      - name: Push version commit and tags
+        if: steps.check.outputs.has_changesets == 'true'
+        run: git push origin main --follow-tags
+
+      - name: Build native host bundle
+        if: steps.check.outputs.has_changesets == 'true'
+        run: npm run build --workspace=native-host
+
       - name: Generate SHA256 checksums
-        if: steps.detect-release.outputs.should_release == 'true'
+        if: steps.check.outputs.has_changesets == 'true'
         run: |
           cd native-host/dist
           shasum -a 256 host.bundle.js run.sh > SHA256SUMS.txt
-          # Round-trip verify checksums match
           shasum -a 256 -c SHA256SUMS.txt
 
-      - name: Get native-host version
-        id: nh-version
-        if: steps.detect-release.outputs.should_release == 'true'
-        run: |
-          VERSION=$(node -p "require('./native-host/package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=native-host@$VERSION" >> "$GITHUB_OUTPUT"
-
       - name: Create GitHub Release
-        if: steps.detect-release.outputs.should_release == 'true'
+        if: steps.check.outputs.has_changesets == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.nh-version.outputs.tag }}
-          name: native-host@${{ steps.nh-version.outputs.version }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: native-host@${{ steps.tag.outputs.version }}
           generate_release_notes: false
           files: |
             native-host/dist/host.bundle.js
             native-host/dist/run.sh
             native-host/dist/SHA256SUMS.txt
 
-      - name: Verify GitHub Release was created
-        if: steps.detect-release.outputs.should_release == 'true'
+      - name: Verify GitHub Release
+        if: steps.check.outputs.has_changesets == 'true'
         run: |
-          TAG="${{ steps.nh-version.outputs.tag }}"
-          # Verify the release exists via gh CLI
+          TAG="${{ steps.tag.outputs.tag }}"
           gh release view "$TAG" --json tagName,assets --jq '.assets[].name' | sort
           echo "Release $TAG verified with assets above"
         env:
