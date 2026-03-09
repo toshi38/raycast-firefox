@@ -1,14 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v1.1
 milestone_name: Store Publishing & Distribution
-status: unknown
-last_updated: "2026-02-27T20:00:06.683Z"
+status: verifying
+stopped_at: Phase 11 context gathered
+last_updated: "2026-03-09T13:31:25.843Z"
+last_activity: 2026-03-09 — Milestone audit, CD pipeline verified end-to-end
 progress:
-  total_phases: 2
+  total_phases: 5
   completed_phases: 2
   total_plans: 4
   completed_plans: 4
+  percent: 40
 ---
 
 # Project State
@@ -18,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 10 — CI/CD Pipeline
+**Current focus:** Phase 11 — Firefox AMO Submission (next up)
 
 ## Current Position
 
-Phase: 10 of 13 (CI/CD Pipeline)
-Plan: 2 of 2 in current phase
-Status: Phase 10 complete
-Last activity: 2026-02-27 — Completed 10-02: Release Workflow
+Phase: 10 of 13 (CI/CD Pipeline) — complete
+Next: Phase 11 (Firefox AMO Submission)
+Status: Phases 9-10 verified, CD pipeline operational, first release published (native-host@1.1.0)
+Last activity: 2026-03-09 — Milestone audit, CD pipeline verified end-to-end
 
 Progress: [████░░░░░░] 40% (v1.1)
 
@@ -51,7 +54,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - [v1.1 roadmap]: INST-09 (eliminate project-root.txt) assigned to Phase 9 bundling — it's the architectural decoupling that enables all distribution work
-- [v1.1 roadmap]: Phase 12 (AMO) depends only on Phase 9 — can overlap with Phases 10-11 to parallelize review wait time
+- [v1.1 roadmap]: Phase 11 (AMO) depends only on Phase 9 — can start immediately, submit early to parallelize review wait time
 - [09-02]: Raycast bundled Node.js gets highest priority in discovery chain
 - [09-02]: Version check rejects Node.js < 18 with logging rather than silent failure
 - [09-02]: Production path ~/.raycast-firefox/bin/run.sh hardcoded as module-level constant
@@ -61,10 +64,12 @@ Recent decisions affecting current work:
 - [10-01]: PR-only CI trigger; release workflow (10-02) handles main-push CI as prerequisite job
 - [10-01]: Raycast extension CI steps disabled pending ray CLI availability on GitHub Actions runners
 - [10-01]: privatePackages.tag=true for changeset publish git tag creation
-- [10-02]: createGithubReleases: false — changesets built-in release creation does not work for private packages
-- [10-02]: Fallback tag detection covers uncertainty about changesets published output for private-package-only repos
 - [10-02]: shasum -a 256 used instead of sha256sum for macOS runner compatibility
 - [10-02]: Post-release verification via gh release view ensures silent failures are caught
+- [audit]: CD workflow releases directly on merge to main — no intermediate Version Packages PR
+- [audit]: Node.js 22 required in CI (raycast/api engine requirement)
+- [audit]: Changesets track both native-host and raycast-extension (firefox-tabs) for changelog generation
+- [audit]: First release: native-host@1.1.0 with host.bundle.js, run.sh, SHA256SUMS.txt
 
 ### Pending Todos
 
@@ -72,7 +77,7 @@ None.
 
 ### Blockers/Concerns
 
-- Raycast binary download policy ambiguity: bundle in assets/ vs. download from GitHub Releases (resolve during Phase 11 planning)
+- Raycast binary download policy ambiguity: bundle in assets/ vs. download from GitHub Releases (resolve during Phase 12 planning)
 - AMO `data_collection_permissions` value: declare "none" first, fallback to "browsingActivity" if rejected
 - AMO review timing unknown — submit early to parallelize
 
@@ -84,6 +89,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 10-02-PLAN.md (Phase 10 complete)
-Resume file: None
+Last session: 2026-03-09T13:31:25.840Z
+Stopped at: Phase 11 context gathered
+Resume file: .planning/phases/11-firefox-amo-submission/11-CONTEXT.md
