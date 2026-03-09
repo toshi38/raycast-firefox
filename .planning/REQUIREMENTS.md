@@ -15,7 +15,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### CI/CD
 
-- [x] **CICD-01**: GitHub Actions workflow triggers on push to main (changesets handles versioning/tagging; tag-triggered workflows cannot fire from GITHUB_TOKEN-created tags)
+- [x] **CICD-01**: GitHub Actions workflow triggers on push to main (CD: changeset version + tag + release directly, no intermediate PR)
 - [x] **CICD-02**: CI builds native host bundle on macOS ARM64 runner
 - [x] **CICD-03**: CI publishes bundle + SHA256 checksum as GitHub Release assets
 
@@ -34,9 +34,9 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 ### Firefox AMO
 
 - [ ] **AMO-01**: Firefox extension is listed on addons.mozilla.org
-- [ ] **AMO-02**: Extension manifest includes `data_collection_permissions`
-- [ ] **AMO-03**: Extension display name complies with AMO naming policy (no "Firefox" in name)
-- [ ] **AMO-04**: `web-ext` tooling added as dev dependency for building/linting
+- [x] **AMO-02**: Extension manifest includes `data_collection_permissions`
+- [x] **AMO-03**: Extension display name complies with AMO naming policy (no "Firefox" in name)
+- [x] **AMO-04**: `web-ext` tooling added as dev dependency for building/linting
 
 ### Raycast Store
 
@@ -102,9 +102,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-07 | Phase 11 | Pending |
 | INST-08 | Phase 11 | Pending |
 | AMO-01 | Phase 12 | Pending |
-| AMO-02 | Phase 12 | Pending |
-| AMO-03 | Phase 12 | Pending |
-| AMO-04 | Phase 12 | Pending |
+| AMO-02 | Phase 12 | Complete |
+| AMO-03 | Phase 12 | Complete |
+| AMO-04 | Phase 12 | Complete |
 | LINK-01 | Phase 12 | Pending |
 | STORE-01 | Phase 13 | Pending |
 | STORE-02 | Phase 13 | Pending |
@@ -124,4 +124,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 (phase traceability added)*
+*Last updated: 2026-03-09 (milestone audit — phases 9+10 verified, CD pipeline confirmed)*

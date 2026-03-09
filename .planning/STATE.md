@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Store Publishing & Distribution
-status: verifying
-stopped_at: Phase 11 context gathered
-last_updated: "2026-03-09T13:31:25.843Z"
-last_activity: 2026-03-09 — Milestone audit, CD pipeline verified end-to-end
+status: executing
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-03-09T14:00:13Z"
+last_activity: 2026-03-09 — Phase 11-01 AMO submission prep complete
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 40
+  total_plans: 6
+  completed_plans: 5
+  percent: 50
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 11 — Firefox AMO Submission (next up)
+**Current focus:** Phase 11 — Firefox AMO Submission (plan 01 complete, plan 02 next)
 
 ## Current Position
 
-Phase: 10 of 13 (CI/CD Pipeline) — complete
-Next: Phase 11 (Firefox AMO Submission)
-Status: Phases 9-10 verified, CD pipeline operational, first release published (native-host@1.1.0)
-Last activity: 2026-03-09 — Milestone audit, CD pipeline verified end-to-end
+Phase: 11 of 13 (Firefox AMO Submission) — Plan 1 of 2 complete
+Current Plan: 11-02 (AMO Submission)
+Status: AMO submission prep complete, extension zip ready for upload
+Last activity: 2026-03-09 — Phase 11-01 AMO submission prep complete
 
-Progress: [████░░░░░░] 40% (v1.1)
+Progress: [█████░░░░░] 50% (v1.1)
 
 ## Performance Metrics
 
@@ -40,9 +40,9 @@ Progress: [████░░░░░░] 40% (v1.1)
 - Total execution time: 1.48 hours
 
 **Velocity (v1.1):**
-- Total plans completed: 4
-- Average duration: 2min
-- Total execution time: 8min
+- Total plans completed: 5
+- Average duration: 2.2min
+- Total execution time: 11min
 
 *Updated after each plan completion*
 
@@ -70,6 +70,8 @@ Recent decisions affecting current work:
 - [audit]: Node.js 22 required in CI (raycast/api engine requirement)
 - [audit]: Changesets track both native-host and raycast-extension (firefox-tabs) for changelog generation
 - [audit]: First release: native-host@1.1.0 with host.bundle.js, run.sh, SHA256SUMS.txt
+- [11-01]: web-ext-config.cjs (CommonJS) used for ignoreFiles since web-ext requires CJS config format
+- [11-01]: Extension zip glob pattern in release.yml for version-agnostic asset attachment
 
 ### Pending Todos
 
@@ -89,6 +91,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T13:31:25.840Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-firefox-amo-submission/11-CONTEXT.md
+Last session: 2026-03-09T14:00:13Z
+Stopped at: Completed 11-01-PLAN.md
+Resume file: .planning/phases/11-firefox-amo-submission/11-01-SUMMARY.md
