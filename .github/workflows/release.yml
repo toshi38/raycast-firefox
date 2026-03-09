@@ -113,6 +113,10 @@ jobs:
         if: steps.check.outputs.has_changesets == 'true'
         run: npm run build --workspace=native-host
 
+      - name: Build Firefox extension zip
+        if: steps.check.outputs.has_changesets == 'true'
+        run: npm run build --workspace=extension
+
       - name: Generate SHA256 checksums
         if: steps.check.outputs.has_changesets == 'true'
         run: |
@@ -131,6 +135,7 @@ jobs:
             native-host/dist/host.bundle.js
             native-host/dist/run.sh
             native-host/dist/SHA256SUMS.txt
+            extension/web-ext-artifacts/raycast_tab_manager_for_firefox-*.zip
 
       - name: Verify GitHub Release
         if: steps.check.outputs.has_changesets == 'true'
