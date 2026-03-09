@@ -83,6 +83,8 @@ jobs:
       - name: Version packages
         if: steps.check.outputs.has_changesets == 'true'
         run: npx changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit version bumps
         if: steps.check.outputs.has_changesets == 'true'
