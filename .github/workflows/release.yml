@@ -80,11 +80,33 @@ jobs:
             echo "No changesets found, skipping release"
           fi
 
+      - name: Snapshot pre-release versions
+        if: steps.check.outputs.has_changesets == 'true'
+        id: pre
+        run: |
+          echo "native_host=$(node -p "require('./native-host/package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "extension=$(node -p "require('./extension/package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Version packages
         if: steps.check.outputs.has_changesets == 'true'
         run: npx changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect changed packages
+        if: steps.check.outputs.has_changesets == 'true'
+        id: changed
+        run: |
+          NH_NEW=$(node -p "require('./native-host/package.json').version")
+          EXT_NEW=$(node -p "require('./extension/package.json').version")
+          NH_CHANGED=$( [ "$NH_NEW" != "${{ steps.pre.outputs.native_host }}" ] && echo "true" || echo "false" )
+          EXT_CHANGED=$( [ "$EXT_NEW" != "${{ steps.pre.outputs.extension }}" ] && echo "true" || echo "false" )
+          echo "native_host=$NH_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "extension=$EXT_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "native_host_version=$NH_NEW" >> "$GITHUB_OUTPUT"
+          echo "extension_version=$EXT_NEW" >> "$GITHUB_OUTPUT"
+          echo "Native host: ${{ steps.pre.outputs.native_host }} -> $NH_NEW (changed=$NH_CHANGED)"
+          echo "Extension: ${{ steps.pre.outputs.extension }} -> $EXT_NEW (changed=$EXT_CHANGED)"
 
       - name: Commit version bumps
         if: steps.check.outputs.has_changesets == 'true'
@@ -95,15 +117,27 @@ jobs:
           git commit -m "chore: version packages"
 
       - name: Create tags
-        id: tag
         if: steps.check.outputs.has_changesets == 'true'
+        id: tag
         run: |
-          VERSION=$(node -p "require('./native-host/package.json').version")
-          TAG="native-host@$VERSION"
-          git tag "$TAG"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Tagged $TAG"
+          TAGS=""
+          PRIMARY_TAG=""
+          if [ "${{ steps.changed.outputs.native_host }}" = "true" ]; then
+            TAG="native-host@${{ steps.changed.outputs.native_host_version }}"
+            git tag "$TAG"
+            TAGS="$TAG"
+            PRIMARY_TAG="$TAG"
+            echo "Tagged $TAG"
+          fi
+          if [ "${{ steps.changed.outputs.extension }}" = "true" ]; then
+            TAG="extension@${{ steps.changed.outputs.extension_version }}"
+            git tag "$TAG"
+            TAGS="$TAGS $TAG"
+            [ -z "$PRIMARY_TAG" ] && PRIMARY_TAG="$TAG"
+            echo "Tagged $TAG"
+          fi
+          echo "primary_tag=$PRIMARY_TAG" >> "$GITHUB_OUTPUT"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
       - name: Push version commit and tags
         if: steps.check.outputs.has_changesets == 'true'
@@ -118,29 +152,57 @@ jobs:
         run: npm run build --workspace=extension
 
       - name: Generate SHA256 checksums
-        if: steps.check.outputs.has_changesets == 'true'
+        if: steps.changed.outputs.native_host == 'true'
         run: |
           cd native-host/dist
           shasum -a 256 host.bundle.js run.sh > SHA256SUMS.txt
           shasum -a 256 -c SHA256SUMS.txt
 
+      - name: Collect release assets
+        if: steps.check.outputs.has_changesets == 'true'
+        id: assets
+        run: |
+          FILES=""
+          if [ "${{ steps.changed.outputs.native_host }}" = "true" ]; then
+            FILES="native-host/dist/host.bundle.js
+          native-host/dist/run.sh
+          native-host/dist/SHA256SUMS.txt"
+          fi
+          if [ "${{ steps.changed.outputs.extension }}" = "true" ]; then
+            FILES="$FILES
+          extension/web-ext-artifacts/raycast_tab_manager_for_firefox-*.zip"
+          fi
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Build release title
+        if: steps.check.outputs.has_changesets == 'true'
+        id: title
+        run: |
+          PARTS=""
+          if [ "${{ steps.changed.outputs.native_host }}" = "true" ]; then
+            PARTS="native-host@${{ steps.changed.outputs.native_host_version }}"
+          fi
+          if [ "${{ steps.changed.outputs.extension }}" = "true" ]; then
+            [ -n "$PARTS" ] && PARTS="$PARTS, "
+            PARTS="${PARTS}extension@${{ steps.changed.outputs.extension_version }}"
+          fi
+          echo "name=$PARTS" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         if: steps.check.outputs.has_changesets == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: native-host@${{ steps.tag.outputs.version }}
+          tag_name: ${{ steps.tag.outputs.primary_tag }}
+          name: ${{ steps.title.outputs.name }}
           generate_release_notes: false
-          files: |
-            native-host/dist/host.bundle.js
-            native-host/dist/run.sh
-            native-host/dist/SHA256SUMS.txt
-            extension/web-ext-artifacts/raycast_tab_manager_for_firefox-*.zip
+          files: ${{ steps.assets.outputs.files }}
 
       - name: Verify GitHub Release
         if: steps.check.outputs.has_changesets == 'true'
         run: |
-          TAG="${{ steps.tag.outputs.tag }}"
+          TAG="${{ steps.tag.outputs.primary_tag }}"
           gh release view "$TAG" --json tagName,assets --jq '.assets[].name' | sort
           echo "Release $TAG verified with assets above"
         env:
