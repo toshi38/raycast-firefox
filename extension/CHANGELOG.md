@@ -1,5 +1,11 @@
 # raycast-firefox-extension
 
+## 1.0.2
+
+### Patch Changes
+
+- [#7](https://github.com/toshi38/raycast-firefox/pull/7) [`852e5cb`](https://github.com/toshi38/raycast-firefox/commit/852e5cbc0a93d39364e3ae128cda02f4b58af51d) Thanks [@toshi38](https://github.com/toshi38)! - Fix manifest.json version to stay in sync with package.json during releases.
+
 ## 1.0.1
 
 ### Patch Changes

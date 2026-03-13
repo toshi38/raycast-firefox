@@ -1,19 +1,23 @@
 {
   "manifest_version": 2,
   "name": "Raycast Tab Manager for Firefox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Companion extension for Raycast Firefox tab management",
   "browser_specific_settings": {
     "gecko": {
       "id": "raycast-firefox@lau.engineering",
       "strict_min_version": "91.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
     }
   },
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "background.js"
+    ],
     "persistent": true
   },
   "permissions": [
