@@ -93,6 +93,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Sync extension manifest version
+        if: steps.check.outputs.has_changesets == 'true'
+        run: |
+          PKG_VERSION=$(node -p "require('./extension/package.json').version")
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('./extension/manifest.json', 'utf8'));
+            manifest.version = '$PKG_VERSION';
+            fs.writeFileSync('./extension/manifest.json', JSON.stringify(manifest, null, 2) + '\n');
+          "
+          echo "Synced manifest.json version to $PKG_VERSION"
+
       - name: Detect changed packages
         if: steps.check.outputs.has_changesets == 'true'
         id: changed
