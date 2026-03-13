@@ -31,10 +31,10 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - Integer phases (9, 10, 11, ...): Planned milestone work
 - Decimal phases (9.1, 9.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 9: Native Host Bundling** - Bundle native host into a single distributable JS file and eliminate git checkout dependency
-- [x] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions (completed 2026-02-27)
-- [ ] **Phase 11: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo
-- [ ] **Phase 12: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org
+- [x] **Phase 9: Native Host Bundling** - Bundle native host into a single distributable JS file and eliminate git checkout dependency (completed 2026-02-27)
+- [x] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions (completed 2026-03-09)
+- [ ] **Phase 11: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org
+- [ ] **Phase 12: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo
 - [ ] **Phase 13: Raycast Store Submission** - Get Raycast extension listed in the Raycast Store with all required metadata
 
 ## Phase Details
@@ -51,8 +51,8 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Sync logging migration and esbuild bundle
-- [ ] 09-02-PLAN.md — Wrapper script rewrite and dual-mode path resolution
+- [x] 09-01-PLAN.md — Sync logging migration and esbuild bundle
+- [x] 09-02-PLAN.md — Wrapper script rewrite and dual-mode path resolution
 
 ### Phase 10: CI/CD Pipeline
 **Goal**: Every tagged release automatically produces verified, downloadable native host artifacts
@@ -65,10 +65,25 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Workspace setup, changesets config, and CI workflow
-- [ ] 10-02-PLAN.md — Release workflow with changesets and GitHub Release asset upload
+- [x] 10-01-PLAN.md — Workspace setup, changesets config, and CI workflow
+- [x] 10-02-PLAN.md — Release workflow with changesets and GitHub Release asset upload
 
-### Phase 11: Raycast Install Flow
+### Phase 11: Firefox AMO Submission
+**Goal**: Firefox extension is publicly listed on addons.mozilla.org and discoverable by users
+**Depends on**: Phase 9 (bundle must exist so AMO description can reference install flow; no dependency on Phase 10)
+**Requirements**: AMO-01, AMO-02, AMO-03, AMO-04, LINK-01
+**Success Criteria** (what must be TRUE):
+  1. The extension is listed and downloadable on addons.mozilla.org (signed by Mozilla)
+  2. The extension manifest includes `data_collection_permissions` and passes AMO automated review
+  3. The extension display name does not contain "Firefox" (complies with AMO naming policy)
+  4. The AMO listing description includes a link to the Raycast Store page with setup instructions
+**Plans**: 2 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Manifest compliance, web-ext upgrade, LICENSE and README
+- [ ] 11-02-PLAN.md — AMO Developer Hub submission with listing materials
+
+### Phase 12: Raycast Install Flow
 **Goal**: Any Raycast user can install the native host through the setup command without touching a terminal
 **Depends on**: Phase 10
 **Requirements**: INST-01, INST-02, INST-03, INST-04, INST-05, INST-06, INST-07, INST-08
@@ -81,26 +96,12 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
-
-### Phase 12: Firefox AMO Submission
-**Goal**: Firefox extension is publicly listed on addons.mozilla.org and discoverable by users
-**Depends on**: Phase 9 (bundle must exist so AMO description can reference install flow; no dependency on Phase 10/11)
-**Requirements**: AMO-01, AMO-02, AMO-03, AMO-04, LINK-01
-**Success Criteria** (what must be TRUE):
-  1. The extension is listed and downloadable on addons.mozilla.org (signed by Mozilla)
-  2. The extension manifest includes `data_collection_permissions` and passes AMO automated review
-  3. The extension display name does not contain "Firefox" (complies with AMO naming policy)
-  4. The AMO listing description includes a link to the Raycast Store page with setup instructions
-**Plans**: TBD
-
-Plans:
 - [ ] 12-01: TBD
+- [ ] 12-02: TBD
 
 ### Phase 13: Raycast Store Submission
 **Goal**: Raycast extension is publicly listed in the Raycast Store and installable by any Raycast user
-**Depends on**: Phase 11, Phase 12 (install flow must work end-to-end; AMO listing URL needed for README and error links)
+**Depends on**: Phase 12, Phase 11 (install flow must work end-to-end; AMO listing URL needed for README and error links)
 **Requirements**: STORE-01, STORE-02, STORE-03, STORE-04, STORE-05, STORE-06, STORE-07, STORE-08, LINK-02, LINK-03
 **Success Criteria** (what must be TRUE):
   1. The extension is listed in the Raycast Store and installable via Raycast's built-in store browser
@@ -129,12 +130,12 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 6. Tab Close Action | v1.0 | 1/1 | Complete | 2026-02-10 |
 | 7. Error Handling | v1.0 | 2/2 | Complete | 2026-02-14 |
 | 8. Setup Automation | v1.0 | 2/2 | Complete | 2026-02-23 |
-| 9. Native Host Bundling | v1.1 | 0/? | Not started | - |
-| 10. CI/CD Pipeline | 2/2 | Complete    | 2026-02-27 | - |
-| 11. Raycast Install Flow | v1.1 | 0/? | Not started | - |
-| 12. Firefox AMO Submission | v1.1 | 0/? | Not started | - |
+| 9. Native Host Bundling | v1.1 | 2/2 | Complete | 2026-02-27 |
+| 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
+| 11. Firefox AMO Submission | 1/2 | In Progress|  | - |
+| 12. Raycast Install Flow | v1.1 | 0/? | Not started | - |
 | 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-02-24 (v1.1 milestone roadmap created)*
+*Last updated: 2026-03-09 (Phase 11 planned: 2 plans for AMO submission)*
