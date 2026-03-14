@@ -41,19 +41,19 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 ### Raycast Store
 
 - [ ] **STORE-01**: Raycast extension is listed in the Raycast Store
-- [ ] **STORE-02**: README.md with setup instructions and AMO link
-- [ ] **STORE-03**: 512x512 custom icon verified for light/dark themes
+- [x] **STORE-02**: README.md with setup instructions and AMO link
+- [x] **STORE-03**: 512x512 custom icon verified for light/dark themes
 - [ ] **STORE-04**: 3+ screenshots at 2000x1250 in `metadata/` folder
-- [ ] **STORE-05**: CHANGELOG.md with version history
-- [ ] **STORE-06**: `platforms: ["macOS"]` set in package.json
+- [x] **STORE-05**: CHANGELOG.md with version history
+- [x] **STORE-06**: `platforms: ["macOS"]` set in package.json
 - [ ] **STORE-07**: ESLint clean (no `@raycast/prefer-title-case` violations)
-- [ ] **STORE-08**: MIT license present in extension root
+- [x] **STORE-08**: MIT license present in extension root
 
 ### Cross-linking
 
 - [x] **LINK-01**: AMO listing description links to Raycast Store page
-- [ ] **LINK-02**: Raycast README links to AMO listing
-- [ ] **LINK-03**: Error states include direct links to AMO for Firefox extension installation
+- [x] **LINK-02**: Raycast README links to AMO listing
+- [x] **LINK-03**: Error states include direct links to AMO for Firefox extension installation
 
 ## Future Requirements
 
@@ -107,15 +107,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AMO-04 | Phase 11 | Complete |
 | LINK-01 | Phase 11 | Complete |
 | STORE-01 | Phase 13 | Pending |
-| STORE-02 | Phase 13 | Pending |
-| STORE-03 | Phase 13 | Pending |
+| STORE-02 | Phase 13 | Complete |
+| STORE-03 | Phase 13 | Complete |
 | STORE-04 | Phase 13 | Pending |
-| STORE-05 | Phase 13 | Pending |
-| STORE-06 | Phase 13 | Pending |
+| STORE-05 | Phase 13 | Complete |
+| STORE-06 | Phase 13 | Complete |
 | STORE-07 | Phase 13 | Pending |
-| STORE-08 | Phase 13 | Pending |
-| LINK-02 | Phase 13 | Pending |
-| LINK-03 | Phase 13 | Pending |
+| STORE-08 | Phase 13 | Complete |
+| LINK-02 | Phase 13 | Complete |
+| LINK-03 | Phase 13 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 30 total

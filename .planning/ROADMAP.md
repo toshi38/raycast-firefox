@@ -134,7 +134,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
 | 11. Firefox AMO Submission | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 12. Raycast Install Flow | v1.1 | Complete    | 2026-03-14 | 2026-03-14 |
-| 13. Raycast Store Submission | v1.1 | 0/2 | Not started | - |
+| 13. Raycast Store Submission | 1/2 | In Progress|  | - |
 
 ---
 *Roadmap created: 2026-02-06*
