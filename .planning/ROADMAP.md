@@ -109,11 +109,11 @@ Plans:
   3. The extension has a 512x512 icon that renders correctly in both light and dark Raycast themes
   4. At least 3 screenshots at 2000x1250 are included showing tab search, switching, and setup flow
   5. Error states in the extension include direct links to the AMO listing for installing the Firefox extension
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — Code changes, metadata files, and icon preparation
+- [ ] 13-02-PLAN.md — Lint fixes, package-lock, screenshot setup, and Store validation
 
 ## Progress
 
@@ -134,8 +134,8 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
 | 11. Firefox AMO Submission | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 12. Raycast Install Flow | v1.1 | Complete    | 2026-03-14 | 2026-03-14 |
-| 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |
+| 13. Raycast Store Submission | v1.1 | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-03-14 (Phase 12 planned: 2 plans in 1 wave)*
+*Last updated: 2026-03-14 (Phase 13 planned: 2 plans in 2 waves)*
