@@ -26,7 +26,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 - [ ] **INST-03**: Setup command verifies SHA256 hash of downloaded bundle
 - [ ] **INST-04**: Setup command extracts bundle to `~/.raycast-firefox/bin/`
 - [ ] **INST-05**: Setup command registers native messaging manifest pointing to installed bundle
-- [ ] **INST-06**: Setup command creates Node.js symlink for reliable wrapper script execution
+- [x] **INST-06**: Setup command creates Node.js symlink for reliable wrapper script execution
 - [ ] **INST-07**: Setup command verifies full chain after installation
 - [ ] **INST-08**: Installed bundle tracks version via `version.txt`
 - [x] **INST-09**: `project-root.txt` dependency eliminated — extension works without git checkout
@@ -98,7 +98,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-03 | Phase 11 | Pending |
 | INST-04 | Phase 11 | Pending |
 | INST-05 | Phase 11 | Pending |
-| INST-06 | Phase 11 | Pending |
+| INST-06 | Phase 11 | Complete |
 | INST-07 | Phase 11 | Pending |
 | INST-08 | Phase 11 | Pending |
 | AMO-01 | Phase 12 | Complete |
