@@ -33,7 +33,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 
 - [x] **Phase 9: Native Host Bundling** - Bundle native host into a single distributable JS file and eliminate git checkout dependency (completed 2026-02-27)
 - [x] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions (completed 2026-03-09)
-- [ ] **Phase 11: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org
+- [x] **Phase 11: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org (completed 2026-03-14)
 - [ ] **Phase 12: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo
 - [ ] **Phase 13: Raycast Store Submission** - Get Raycast extension listed in the Raycast Store with all required metadata
 
@@ -80,8 +80,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Manifest compliance, web-ext upgrade, LICENSE and README
-- [ ] 11-02-PLAN.md — AMO Developer Hub submission with listing materials
+- [x] 11-01-PLAN.md — Manifest compliance, web-ext upgrade, LICENSE and README
+- [x] 11-02-PLAN.md — AMO Developer Hub submission with listing materials
 
 ### Phase 12: Raycast Install Flow
 **Goal**: Any Raycast user can install the native host through the setup command without touching a terminal
@@ -132,10 +132,10 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 8. Setup Automation | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 9. Native Host Bundling | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
-| 11. Firefox AMO Submission | 1/2 | In Progress|  | - |
+| 11. Firefox AMO Submission | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 12. Raycast Install Flow | v1.1 | 0/? | Not started | - |
 | 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-03-09 (Phase 11 planned: 2 plans for AMO submission)*
+*Last updated: 2026-03-14 (Phase 11 complete: extension listed on AMO)*

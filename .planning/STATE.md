@@ -2,16 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Store Publishing & Distribution
+current_plan: 12-01 (TBD)
 status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-03-09T14:00:13Z"
-last_activity: 2026-03-09 — Phase 11-01 AMO submission prep complete
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-03-14T09:10:05.351Z"
+last_activity: 2026-03-14 — Phase 11-02 AMO submission complete
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
-  percent: 50
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State
@@ -21,16 +22,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Quickly find and switch to any open Firefox tab without leaving the keyboard
-**Current focus:** Phase 11 — Firefox AMO Submission (plan 01 complete, plan 02 next)
+**Current focus:** Phase 12 — Raycast Install Flow (Phase 11 AMO submission complete)
 
 ## Current Position
 
-Phase: 11 of 13 (Firefox AMO Submission) — Plan 1 of 2 complete
-Current Plan: 11-02 (AMO Submission)
-Status: AMO submission prep complete, extension zip ready for upload
-Last activity: 2026-03-09 — Phase 11-01 AMO submission prep complete
+Phase: 12 of 13 (Raycast Install Flow) — Phase 11 complete (2/2 plans)
+Current Plan: 12-01 (TBD)
+Status: Phase 11 complete, extension listed on AMO, ready for Phase 12
+Last activity: 2026-03-14 — Phase 11-02 AMO submission complete
 
-Progress: [█████░░░░░] 50% (v1.1)
+Progress: [██████░░░░] 60% (v1.1)
 
 ## Performance Metrics
 
@@ -40,9 +41,9 @@ Progress: [█████░░░░░] 50% (v1.1)
 - Total execution time: 1.48 hours
 
 **Velocity (v1.1):**
-- Total plans completed: 5
-- Average duration: 2.2min
-- Total execution time: 11min
+- Total plans completed: 6
+- Average duration: 2.7min
+- Total execution time: 16min
 
 *Updated after each plan completion*
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - [audit]: First release: native-host@1.1.0 with host.bundle.js, run.sh, SHA256SUMS.txt
 - [11-01]: web-ext-config.cjs (CommonJS) used for ignoreFiles since web-ext requires CJS config format
 - [11-01]: Extension zip glob pattern in release.yml for version-agnostic asset attachment
+- [Phase 11]: Extension listed as 'Raycast Tab Manager' on AMO (shortened from manifest name due to AMO char limits)
+- [Phase 11]: AMO listing URL: https://addons.mozilla.org/en-US/firefox/addon/raycast-tab-manager-for-firefox/
+- [Phase 11]: Submitted as version 1.0.2 via extension@1.0.2 GitHub release zip
 
 ### Pending Todos
 
@@ -80,8 +84,6 @@ None.
 ### Blockers/Concerns
 
 - Raycast binary download policy ambiguity: bundle in assets/ vs. download from GitHub Releases (resolve during Phase 12 planning)
-- AMO `data_collection_permissions` value: declare "none" first, fallback to "browsingActivity" if rejected
-- AMO review timing unknown — submit early to parallelize
 
 ### Quick Tasks Completed
 
@@ -91,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09T14:00:13Z
-Stopped at: Completed 11-01-PLAN.md
-Resume file: .planning/phases/11-firefox-amo-submission/11-01-SUMMARY.md
+Last session: 2026-03-14T09:10:05.349Z
+Stopped at: Completed 11-02-PLAN.md
+Resume file: .planning/phases/11-firefox-amo-submission/11-02-SUMMARY.md

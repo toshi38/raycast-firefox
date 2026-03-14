@@ -33,7 +33,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### Firefox AMO
 
-- [ ] **AMO-01**: Firefox extension is listed on addons.mozilla.org
+- [x] **AMO-01**: Firefox extension is listed on addons.mozilla.org
 - [x] **AMO-02**: Extension manifest includes `data_collection_permissions`
 - [x] **AMO-03**: Extension display name complies with AMO naming policy (no "Firefox" in name)
 - [x] **AMO-04**: `web-ext` tooling added as dev dependency for building/linting
@@ -51,7 +51,7 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### Cross-linking
 
-- [ ] **LINK-01**: AMO listing description links to Raycast Store page
+- [x] **LINK-01**: AMO listing description links to Raycast Store page
 - [ ] **LINK-02**: Raycast README links to AMO listing
 - [ ] **LINK-03**: Error states include direct links to AMO for Firefox extension installation
 
@@ -101,11 +101,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-06 | Phase 11 | Pending |
 | INST-07 | Phase 11 | Pending |
 | INST-08 | Phase 11 | Pending |
-| AMO-01 | Phase 12 | Pending |
+| AMO-01 | Phase 12 | Complete |
 | AMO-02 | Phase 12 | Complete |
 | AMO-03 | Phase 12 | Complete |
 | AMO-04 | Phase 12 | Complete |
-| LINK-01 | Phase 12 | Pending |
+| LINK-01 | Phase 12 | Complete |
 | STORE-01 | Phase 13 | Pending |
 | STORE-02 | Phase 13 | Pending |
 | STORE-03 | Phase 13 | Pending |
