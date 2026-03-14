@@ -21,14 +21,14 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### Install Flow
 
-- [ ] **INST-01**: User can install native host from Raycast setup command without cloning the repo
-- [ ] **INST-02**: Setup command downloads native host bundle from GitHub Releases
-- [ ] **INST-03**: Setup command verifies SHA256 hash of downloaded bundle
-- [ ] **INST-04**: Setup command extracts bundle to `~/.raycast-firefox/bin/`
-- [ ] **INST-05**: Setup command registers native messaging manifest pointing to installed bundle
+- [x] **INST-01**: User can install native host from Raycast setup command without cloning the repo
+- [x] **INST-02**: Setup command downloads native host bundle from GitHub Releases
+- [x] **INST-03**: Setup command verifies SHA256 hash of downloaded bundle
+- [x] **INST-04**: Setup command extracts bundle to `~/.raycast-firefox/bin/`
+- [x] **INST-05**: Setup command registers native messaging manifest pointing to installed bundle
 - [x] **INST-06**: Setup command creates Node.js symlink for reliable wrapper script execution
-- [ ] **INST-07**: Setup command verifies full chain after installation
-- [ ] **INST-08**: Installed bundle tracks version via `version.txt`
+- [x] **INST-07**: Setup command verifies full chain after installation
+- [x] **INST-08**: Installed bundle tracks version via `version.txt`
 - [x] **INST-09**: `project-root.txt` dependency eliminated — extension works without git checkout
 
 ### Firefox AMO
@@ -93,19 +93,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CICD-01 | Phase 10 | Complete |
 | CICD-02 | Phase 10 | Complete |
 | CICD-03 | Phase 10 | Complete |
-| INST-01 | Phase 11 | Pending |
-| INST-02 | Phase 11 | Pending |
-| INST-03 | Phase 11 | Pending |
-| INST-04 | Phase 11 | Pending |
-| INST-05 | Phase 11 | Pending |
-| INST-06 | Phase 11 | Complete |
-| INST-07 | Phase 11 | Pending |
-| INST-08 | Phase 11 | Pending |
-| AMO-01 | Phase 12 | Complete |
-| AMO-02 | Phase 12 | Complete |
-| AMO-03 | Phase 12 | Complete |
-| AMO-04 | Phase 12 | Complete |
-| LINK-01 | Phase 12 | Complete |
+| INST-01 | Phase 12 | Complete |
+| INST-02 | Phase 12 | Complete |
+| INST-03 | Phase 12 | Complete |
+| INST-04 | Phase 12 | Complete |
+| INST-05 | Phase 12 | Complete |
+| INST-06 | Phase 12 | Complete |
+| INST-07 | Phase 12 | Complete |
+| INST-08 | Phase 12 | Complete |
+| AMO-01 | Phase 11 | Complete |
+| AMO-02 | Phase 11 | Complete |
+| AMO-03 | Phase 11 | Complete |
+| AMO-04 | Phase 11 | Complete |
+| LINK-01 | Phase 11 | Complete |
 | STORE-01 | Phase 13 | Pending |
 | STORE-02 | Phase 13 | Pending |
 | STORE-03 | Phase 13 | Pending |

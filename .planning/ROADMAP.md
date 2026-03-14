@@ -34,7 +34,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - [x] **Phase 9: Native Host Bundling** - Bundle native host into a single distributable JS file and eliminate git checkout dependency (completed 2026-02-27)
 - [x] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions (completed 2026-03-09)
 - [x] **Phase 11: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org (completed 2026-03-14)
-- [ ] **Phase 12: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo
+- [x] **Phase 12: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo (completed 2026-03-14)
 - [ ] **Phase 13: Raycast Store Submission** - Get Raycast extension listed in the Raycast Store with all required metadata
 
 ## Phase Details
@@ -96,8 +96,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — Installer library and setup command integration
-- [ ] 12-02-PLAN.md — run.sh symlink priority and native-host changeset
+- [x] 12-01-PLAN.md — Installer library and setup command integration
+- [x] 12-02-PLAN.md — run.sh symlink priority and native-host changeset
 
 ### Phase 13: Raycast Store Submission
 **Goal**: Raycast extension is publicly listed in the Raycast Store and installable by any Raycast user
@@ -133,7 +133,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 9. Native Host Bundling | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
 | 11. Firefox AMO Submission | v1.1 | 2/2 | Complete | 2026-03-14 |
-| 12. Raycast Install Flow | 1/2 | In Progress|  | - |
+| 12. Raycast Install Flow | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |
 
 ---
