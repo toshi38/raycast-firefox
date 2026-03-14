@@ -7,6 +7,7 @@ import {
   Toast,
 } from "@raycast/api";
 import { installNativeHost } from "./lib/installer";
+import { AMO_URL } from "./lib/constants";
 import { isFirefoxRunning } from "./lib/errors";
 import {
   generateManifest,
@@ -17,9 +18,6 @@ import {
   verifyChain,
   writeManifest,
 } from "./lib/setup";
-
-const AMO_URL =
-  "https://addons.mozilla.org/en-US/firefox/addon/raycast-tab-manager-for-firefox/";
 
 export default async function Command() {
   try {
@@ -105,8 +103,7 @@ export default async function Command() {
       // Host reachable but tabs fail -- extension not connected
       toast.style = Toast.Style.Success;
       toast.title = "Firefox Bridge Installed";
-      toast.message =
-        "Install the Firefox companion extension to connect";
+      toast.message = "Install the Firefox companion extension to connect";
       toast.primaryAction = {
         title: "Install Firefox Extension",
         onAction: () => {
@@ -122,8 +119,7 @@ export default async function Command() {
       // Firefox not running
       toast.style = Toast.Style.Success;
       toast.title = "Firefox Bridge Installed";
-      toast.message =
-        "Open Firefox and install the companion extension";
+      toast.message = "Open Firefox and install the companion extension";
       toast.primaryAction = {
         title: "Install Firefox Extension",
         onAction: () => {

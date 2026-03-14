@@ -25,6 +25,7 @@ import {
   fetchWithRetry,
   showActionError,
 } from "./lib/errors";
+import { AMO_URL } from "./lib/constants";
 
 // -- Types matching the native host HTTP API response --
 
@@ -520,8 +521,8 @@ export default function SearchTabs() {
               )}
               {classifiedError.mode === FailureMode.ExtensionNotInstalled && (
                 <Action.OpenInBrowser
-                  title="Install Webextension"
-                  url="https://addons.mozilla.org/en-US/firefox/addon/raycast-firefox/"
+                  title="Install Firefox Extension"
+                  url={AMO_URL}
                 />
               )}
               {classifiedError.mode === FailureMode.HostNotRunning && (
