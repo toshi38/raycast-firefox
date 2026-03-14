@@ -93,11 +93,11 @@ Plans:
   3. A Node.js symlink is created at `~/.raycast-firefox/node` pointing to the Raycast runtime, so the wrapper script always has a working Node.js
   4. The installed bundle includes a `version.txt` tracking which release is installed
   5. Running setup a second time on an already-installed system succeeds cleanly (reinstall/update path works)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — Installer library and setup command integration
+- [ ] 12-02-PLAN.md — run.sh symlink priority and native-host changeset
 
 ### Phase 13: Raycast Store Submission
 **Goal**: Raycast extension is publicly listed in the Raycast Store and installable by any Raycast user
@@ -133,9 +133,9 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 9. Native Host Bundling | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
 | 11. Firefox AMO Submission | v1.1 | 2/2 | Complete | 2026-03-14 |
-| 12. Raycast Install Flow | v1.1 | 0/? | Not started | - |
+| 12. Raycast Install Flow | v1.1 | 0/2 | Not started | - |
 | 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-03-14 (Phase 11 complete: extension listed on AMO)*
+*Last updated: 2026-03-14 (Phase 12 planned: 2 plans in 1 wave)*
