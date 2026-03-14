@@ -4,7 +4,7 @@
   "title": "Firefox Tabs",
   "description": "Search and switch Firefox tabs from Raycast",
   "icon": "icon.png",
-  "author": "stelau",
+  "author": "stephen_lau",
   "categories": [
     "Applications",
     "Productivity"
