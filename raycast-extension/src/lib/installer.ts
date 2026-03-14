@@ -242,9 +242,7 @@ export async function installNativeHost(
     releaseInfo = await getLatestNativeHostRelease();
   } catch (error) {
     if (error instanceof Error && error.message.includes("fetch failed")) {
-      throw new Error(
-        "Check your internet connection and try again.",
-      );
+      throw new Error("Check your internet connection and try again.");
     }
     throw error;
   }
