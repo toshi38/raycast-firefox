@@ -21,14 +21,14 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 
 ### Install Flow
 
-- [ ] **INST-01**: User can install native host from Raycast setup command without cloning the repo
-- [ ] **INST-02**: Setup command downloads native host bundle from GitHub Releases
-- [ ] **INST-03**: Setup command verifies SHA256 hash of downloaded bundle
-- [ ] **INST-04**: Setup command extracts bundle to `~/.raycast-firefox/bin/`
-- [ ] **INST-05**: Setup command registers native messaging manifest pointing to installed bundle
-- [ ] **INST-06**: Setup command creates Node.js symlink for reliable wrapper script execution
-- [ ] **INST-07**: Setup command verifies full chain after installation
-- [ ] **INST-08**: Installed bundle tracks version via `version.txt`
+- [x] **INST-01**: User can install native host from Raycast setup command without cloning the repo
+- [x] **INST-02**: Setup command downloads native host bundle from GitHub Releases
+- [x] **INST-03**: Setup command verifies SHA256 hash of downloaded bundle
+- [x] **INST-04**: Setup command extracts bundle to `~/.raycast-firefox/bin/`
+- [x] **INST-05**: Setup command registers native messaging manifest pointing to installed bundle
+- [x] **INST-06**: Setup command creates Node.js symlink for reliable wrapper script execution
+- [x] **INST-07**: Setup command verifies full chain after installation
+- [x] **INST-08**: Installed bundle tracks version via `version.txt`
 - [x] **INST-09**: `project-root.txt` dependency eliminated — extension works without git checkout
 
 ### Firefox AMO
@@ -41,19 +41,19 @@ Requirements for store publishing and distribution. Each maps to roadmap phases.
 ### Raycast Store
 
 - [ ] **STORE-01**: Raycast extension is listed in the Raycast Store
-- [ ] **STORE-02**: README.md with setup instructions and AMO link
-- [ ] **STORE-03**: 512x512 custom icon verified for light/dark themes
+- [x] **STORE-02**: README.md with setup instructions and AMO link
+- [x] **STORE-03**: 512x512 custom icon verified for light/dark themes
 - [ ] **STORE-04**: 3+ screenshots at 2000x1250 in `metadata/` folder
-- [ ] **STORE-05**: CHANGELOG.md with version history
-- [ ] **STORE-06**: `platforms: ["macOS"]` set in package.json
+- [x] **STORE-05**: CHANGELOG.md with version history
+- [x] **STORE-06**: `platforms: ["macOS"]` set in package.json
 - [ ] **STORE-07**: ESLint clean (no `@raycast/prefer-title-case` violations)
-- [ ] **STORE-08**: MIT license present in extension root
+- [x] **STORE-08**: MIT license present in extension root
 
 ### Cross-linking
 
 - [x] **LINK-01**: AMO listing description links to Raycast Store page
-- [ ] **LINK-02**: Raycast README links to AMO listing
-- [ ] **LINK-03**: Error states include direct links to AMO for Firefox extension installation
+- [x] **LINK-02**: Raycast README links to AMO listing
+- [x] **LINK-03**: Error states include direct links to AMO for Firefox extension installation
 
 ## Future Requirements
 
@@ -93,29 +93,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CICD-01 | Phase 10 | Complete |
 | CICD-02 | Phase 10 | Complete |
 | CICD-03 | Phase 10 | Complete |
-| INST-01 | Phase 11 | Pending |
-| INST-02 | Phase 11 | Pending |
-| INST-03 | Phase 11 | Pending |
-| INST-04 | Phase 11 | Pending |
-| INST-05 | Phase 11 | Pending |
-| INST-06 | Phase 11 | Pending |
-| INST-07 | Phase 11 | Pending |
-| INST-08 | Phase 11 | Pending |
-| AMO-01 | Phase 12 | Complete |
-| AMO-02 | Phase 12 | Complete |
-| AMO-03 | Phase 12 | Complete |
-| AMO-04 | Phase 12 | Complete |
-| LINK-01 | Phase 12 | Complete |
+| INST-01 | Phase 12 | Complete |
+| INST-02 | Phase 12 | Complete |
+| INST-03 | Phase 12 | Complete |
+| INST-04 | Phase 12 | Complete |
+| INST-05 | Phase 12 | Complete |
+| INST-06 | Phase 12 | Complete |
+| INST-07 | Phase 12 | Complete |
+| INST-08 | Phase 12 | Complete |
+| AMO-01 | Phase 11 | Complete |
+| AMO-02 | Phase 11 | Complete |
+| AMO-03 | Phase 11 | Complete |
+| AMO-04 | Phase 11 | Complete |
+| LINK-01 | Phase 11 | Complete |
 | STORE-01 | Phase 13 | Pending |
-| STORE-02 | Phase 13 | Pending |
-| STORE-03 | Phase 13 | Pending |
+| STORE-02 | Phase 13 | Complete |
+| STORE-03 | Phase 13 | Complete |
 | STORE-04 | Phase 13 | Pending |
-| STORE-05 | Phase 13 | Pending |
-| STORE-06 | Phase 13 | Pending |
+| STORE-05 | Phase 13 | Complete |
+| STORE-06 | Phase 13 | Complete |
 | STORE-07 | Phase 13 | Pending |
-| STORE-08 | Phase 13 | Pending |
-| LINK-02 | Phase 13 | Pending |
-| LINK-03 | Phase 13 | Pending |
+| STORE-08 | Phase 13 | Complete |
+| LINK-02 | Phase 13 | Complete |
+| LINK-03 | Phase 13 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 30 total

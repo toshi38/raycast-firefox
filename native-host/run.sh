@@ -61,6 +61,11 @@ try_node() {
 
 # -- Priority chain ------------------------------------------------------------
 
+# Priority 0: Symlink created by Raycast setup (fastest, most reliable)
+if [ -x "$HOME/.raycast-firefox/node" ]; then
+  try_node "$HOME/.raycast-firefox/node" "Raycast symlink"
+fi
+
 # Priority 1: Raycast bundled Node.js
 RAYCAST_NODE=$(find "$HOME/Library/Application Support/com.raycast.macos/NodeJS/runtime" -name "node" -type f 2>/dev/null | head -1)
 if [ -n "${RAYCAST_NODE:-}" ]; then
@@ -87,4 +92,4 @@ fi
 
 # -- No suitable Node.js found ------------------------------------------------
 
-log_and_exit "No suitable Node.js (>= v$MIN_NODE_VERSION) found. Checked: Raycast bundled, /opt/homebrew/bin/node, /usr/local/bin/node, nvm, system PATH."
+log_and_exit "No suitable Node.js (>= v$MIN_NODE_VERSION) found. Checked: Raycast symlink, Raycast bundled, /opt/homebrew/bin/node, /usr/local/bin/node, nvm, system PATH."

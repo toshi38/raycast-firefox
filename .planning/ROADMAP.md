@@ -34,7 +34,7 @@ See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - [x] **Phase 9: Native Host Bundling** - Bundle native host into a single distributable JS file and eliminate git checkout dependency (completed 2026-02-27)
 - [x] **Phase 10: CI/CD Pipeline** - Automate building and publishing the native host bundle via GitHub Actions (completed 2026-03-09)
 - [x] **Phase 11: Firefox AMO Submission** - Get Firefox extension listed and signed on addons.mozilla.org (completed 2026-03-14)
-- [ ] **Phase 12: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo
+- [x] **Phase 12: Raycast Install Flow** - Setup command installs native host from release artifacts without cloning the repo (completed 2026-03-14)
 - [ ] **Phase 13: Raycast Store Submission** - Get Raycast extension listed in the Raycast Store with all required metadata
 
 ## Phase Details
@@ -93,11 +93,11 @@ Plans:
   3. A Node.js symlink is created at `~/.raycast-firefox/node` pointing to the Raycast runtime, so the wrapper script always has a working Node.js
   4. The installed bundle includes a `version.txt` tracking which release is installed
   5. Running setup a second time on an already-installed system succeeds cleanly (reinstall/update path works)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [x] 12-01-PLAN.md — Installer library and setup command integration
+- [x] 12-02-PLAN.md — run.sh symlink priority and native-host changeset
 
 ### Phase 13: Raycast Store Submission
 **Goal**: Raycast extension is publicly listed in the Raycast Store and installable by any Raycast user
@@ -109,11 +109,11 @@ Plans:
   3. The extension has a 512x512 icon that renders correctly in both light and dark Raycast themes
   4. At least 3 screenshots at 2000x1250 are included showing tab search, switching, and setup flow
   5. Error states in the extension include direct links to the AMO listing for installing the Firefox extension
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — Code changes, metadata files, and icon preparation
+- [ ] 13-02-PLAN.md — Lint fixes, package-lock, screenshot setup, and Store validation
 
 ## Progress
 
@@ -133,9 +133,9 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 (can overlap with 10/11) ->
 | 9. Native Host Bundling | v1.1 | 2/2 | Complete | 2026-02-27 |
 | 10. CI/CD Pipeline | v1.1 | 2/2 | Complete | 2026-03-09 |
 | 11. Firefox AMO Submission | v1.1 | 2/2 | Complete | 2026-03-14 |
-| 12. Raycast Install Flow | v1.1 | 0/? | Not started | - |
-| 13. Raycast Store Submission | v1.1 | 0/? | Not started | - |
+| 12. Raycast Install Flow | v1.1 | Complete    | 2026-03-14 | 2026-03-14 |
+| 13. Raycast Store Submission | 1/2 | In Progress|  | - |
 
 ---
 *Roadmap created: 2026-02-06*
-*Last updated: 2026-03-14 (Phase 11 complete: extension listed on AMO)*
+*Last updated: 2026-03-14 (Phase 13 planned: 2 plans in 2 waves)*

@@ -25,6 +25,7 @@ import {
   fetchWithRetry,
   showActionError,
 } from "./lib/errors";
+import { AMO_URL } from "./lib/constants";
 
 // -- Types matching the native host HTTP API response --
 
@@ -68,8 +69,7 @@ interface TabsResponse {
  */
 function getPort(): number {
   try {
-    const portPath = join(homedir(), ".raycast-firefox", "port");
-    const content = readFileSync(portPath, "utf-8").trim();
+    const content = readFileSync(PORT_PATH, "utf-8").trim();
     const port = parseInt(content, 10);
     if (Number.isNaN(port) || port <= 0 || port > 65535) {
       return 26394;
@@ -80,7 +80,7 @@ function getPort(): number {
   }
 }
 
-const port = getPort();
+const PORT_PATH = join(homedir(), ".raycast-firefox", "port");
 
 // -- URL helpers --
 
@@ -198,7 +198,7 @@ function getFallbackIcon(tab: Tab): Image.ImageLike {
  */
 function getTabIcon(
   tab: Tab,
-  favicons: Record<string, string>,
+  favicons: Record<string, string>
 ): Image.ImageLike {
   // Use data URIs directly from Firefox (most common case)
   if (tab.favIconUrl?.startsWith("data:")) {
@@ -241,7 +241,7 @@ function getWindowNumber(windowId: number, allWindowIds: number[]): number {
  */
 function buildAccessories(
   tab: Tab,
-  windowNumber: number,
+  windowNumber: number
 ): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
 
@@ -271,7 +271,7 @@ function buildAccessories(
 async function switchTab(tabId: number, windowId: number) {
   await closeMainWindow({ clearRootSearch: true });
   try {
-    const response = await fetch(`http://127.0.0.1:${port}/switch`, {
+    const response = await fetch(`http://127.0.0.1:${getPort()}/switch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tabId, windowId }),
@@ -291,7 +291,7 @@ async function switchTab(tabId: number, windowId: number) {
 
 async function closeTab(
   tabId: number,
-  mutate: MutatePromise<Tab[], undefined>,
+  mutate: MutatePromise<Tab[], undefined>
 ) {
   const toast = await showToast({
     style: Toast.Style.Animated,
@@ -300,7 +300,7 @@ async function closeTab(
   try {
     await mutate(
       (async () => {
-        const res = await fetch(`http://127.0.0.1:${port}/close`, {
+        const res = await fetch(`http://127.0.0.1:${getPort()}/close`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tabId }),
@@ -316,7 +316,7 @@ async function closeTab(
         optimisticUpdate(data) {
           return (data ?? []).filter((t) => t.id !== tabId);
         },
-      },
+      }
     );
     toast.style = Toast.Style.Success;
     toast.title = "Tab closed";
@@ -336,7 +336,7 @@ async function fetchAllTabs(): Promise<Tab[]> {
 
   while (hasMore && pages < maxPages) {
     const res = await fetch(
-      `http://127.0.0.1:${port}/tabs?offset=${allTabs.length}`,
+      `http://127.0.0.1:${getPort()}/tabs?offset=${allTabs.length}`
     );
     if (!res.ok) {
       const body = (await res
@@ -388,8 +388,7 @@ export default function SearchTabs() {
       // Fast-fail: if port file is gone, no host is listening — skip retries.
       // Use a distinct error message so classifyError skips pgrep (avoids
       // race condition during Firefox shutdown where process lingers briefly).
-      const portPath = join(homedir(), ".raycast-firefox", "port");
-      if (!existsSync(portPath)) {
+      if (!existsSync(PORT_PATH)) {
         return Promise.reject(new Error("port-file-missing"));
       }
       return fetchWithRetry(fetchAllTabs);
@@ -398,7 +397,7 @@ export default function SearchTabs() {
     {
       onError: handleError,
       onData: handleData,
-    },
+    }
   );
   // Watch ~/.raycast-firefox/port for changes. The native host writes this
   // file on startup and removes it when Firefox disconnects (stdin EOF).
@@ -410,8 +409,7 @@ export default function SearchTabs() {
     try {
       const watcher = watch(dir, (_event, filename) => {
         if (filename === "port") {
-          const portPath = join(dir, "port");
-          if (existsSync(portPath)) {
+          if (existsSync(PORT_PATH)) {
             // Port file created — host just started
             setTimeout(revalidate, 500);
           } else {
@@ -443,9 +441,9 @@ export default function SearchTabs() {
               t.favIconUrl &&
               !t.favIconUrl.startsWith("data:") &&
               !favicons[t.favIconUrl] &&
-              !fetchedRef.current.has(t.favIconUrl),
+              !fetchedRef.current.has(t.favIconUrl)
           )
-          .map((t) => t.favIconUrl as string),
+          .map((t) => t.favIconUrl as string)
       ),
     ];
 
@@ -463,7 +461,7 @@ export default function SearchTabs() {
     urlsToFetch.forEach(async (url) => {
       try {
         const res = await fetch(
-          `http://127.0.0.1:${port}/favicon?url=${encodeURIComponent(url)}`,
+          `http://127.0.0.1:${getPort()}/favicon?url=${encodeURIComponent(url)}`
         );
         if (res.ok) {
           const json = (await res.json()) as {
@@ -487,12 +485,12 @@ export default function SearchTabs() {
 
   // Sort tabs by most recently accessed first
   const sortedTabs = [...tabs].sort(
-    (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0),
+    (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0)
   );
 
   // Compute unique sorted window IDs for window number assignment
   const windowIds = [...new Set(sortedTabs.map((t) => t.windowId))].sort(
-    (a, b) => a - b,
+    (a, b) => a - b
   );
 
   return (
@@ -520,8 +518,8 @@ export default function SearchTabs() {
               )}
               {classifiedError.mode === FailureMode.ExtensionNotInstalled && (
                 <Action.OpenInBrowser
-                  title="Install Webextension"
-                  url="https://addons.mozilla.org/en-US/firefox/addon/raycast-firefox/"
+                  title="Install Firefox Extension"
+                  url={AMO_URL}
                 />
               )}
               {classifiedError.mode === FailureMode.HostNotRunning && (
@@ -555,7 +553,7 @@ export default function SearchTabs() {
           keywords={urlKeywords(tab.url)}
           accessories={buildAccessories(
             tab,
-            getWindowNumber(tab.windowId, windowIds),
+            getWindowNumber(tab.windowId, windowIds)
           )}
           actions={
             <ActionPanel>
