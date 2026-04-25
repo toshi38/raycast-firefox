@@ -1,5 +1,13 @@
 # raycast-firefox-native-host
 
+## 1.1.1
+
+### Patch Changes
+
+- [#8](https://github.com/toshi38/raycast-firefox/pull/8) [`9a61f84`](https://github.com/toshi38/raycast-firefox/commit/9a61f84de865ef59b12045d1076a03cde6e14e18) Thanks [@toshi38](https://github.com/toshi38)! - Add Node.js symlink priority to run.sh discovery chain
+
+  The wrapper script now checks `~/.raycast-firefox/node` as Priority 0 before scanning for Raycast bundled, Homebrew, nvm, or system Node.js. This symlink is created by the Raycast setup command and provides deterministic, fast Node.js discovery.
+
 ## 1.1.0
 
 ### Minor Changes
