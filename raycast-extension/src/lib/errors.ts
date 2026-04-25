@@ -32,6 +32,14 @@ export function isFirefoxRunning(): boolean {
   }
 }
 
+export async function isFirefoxRunningAsync(): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile("pgrep", ["-xi", "firefox"], (error: unknown) => {
+      resolve(!error);
+    });
+  });
+}
+
 // -- Error classification --
 
 /**
@@ -44,11 +52,11 @@ export function isFirefoxRunning(): boolean {
  * 2. Error with "not connected" or "timeout" in message -> ExtensionNotInstalled
  * 3. Everything else -> Unknown
  */
-export function classifyError(error: unknown): ClassifiedError {
+export async function classifyError(error: unknown): Promise<ClassifiedError> {
   // Port file missing — host isn't serving.
   // Check if Firefox is running to distinguish "not running" from "not set up".
   if (error instanceof Error && error.message === "port-file-missing") {
-    if (isFirefoxRunning()) {
+    if (await isFirefoxRunningAsync()) {
       return {
         mode: FailureMode.HostNotRunning,
         title: "Native Host Not Connected",
@@ -67,7 +75,7 @@ export function classifyError(error: unknown): ClassifiedError {
   if (error instanceof TypeError && error.message === "fetch failed") {
     const cause = (error as TypeError & { cause?: { code?: string } }).cause;
     if (cause?.code === "ECONNREFUSED") {
-      if (!isFirefoxRunning()) {
+      if (!(await isFirefoxRunningAsync())) {
         return {
           mode: FailureMode.FirefoxNotRunning,
           title: "Firefox Isn't Running",
@@ -114,7 +122,7 @@ export function classifyError(error: unknown): ClassifiedError {
 export async function fetchWithRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelayMs: number = 1000
+  baseDelayMs: number = 1000,
 ): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -140,9 +148,9 @@ export async function fetchWithRetry<T>(
  */
 export async function showActionError(
   error: unknown,
-  actionName: string
+  actionName: string,
 ): Promise<void> {
-  const classified = classifyError(error);
+  const classified = await classifyError(error);
 
   const options: Toast.Options = {
     style: Toast.Style.Failure,
