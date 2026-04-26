@@ -14,7 +14,7 @@ import {
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
 import { execFile } from "child_process";
-import { existsSync, readFileSync, watch } from "fs";
+import { existsSync, watch } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,6 +26,7 @@ import {
   showActionError,
 } from "./lib/errors";
 import { AMO_URL } from "./lib/constants";
+import { getPort } from "./lib/setup";
 
 // -- Types matching the native host HTTP API response --
 
@@ -59,25 +60,6 @@ interface TabsResponse {
     hasMore: boolean;
   };
   meta: { count: number; timestamp: number };
-}
-
-// -- Port discovery --
-
-/**
- * Read the HTTP server port from ~/.raycast-firefox/port.
- * Falls back to 26394 on any error (file missing, parse failure).
- */
-function getPort(): number {
-  try {
-    const content = readFileSync(PORT_PATH, "utf-8").trim();
-    const port = parseInt(content, 10);
-    if (Number.isNaN(port) || port <= 0 || port > 65535) {
-      return 26394;
-    }
-    return port;
-  } catch {
-    return 26394;
-  }
 }
 
 const PORT_PATH = join(homedir(), ".raycast-firefox", "port");
@@ -198,7 +180,7 @@ function getFallbackIcon(tab: Tab): Image.ImageLike {
  */
 function getTabIcon(
   tab: Tab,
-  favicons: Record<string, string>
+  favicons: Record<string, string>,
 ): Image.ImageLike {
   // Use data URIs directly from Firefox (most common case)
   if (tab.favIconUrl?.startsWith("data:")) {
@@ -241,7 +223,7 @@ function getWindowNumber(windowId: number, allWindowIds: number[]): number {
  */
 function buildAccessories(
   tab: Tab,
-  windowNumber: number
+  windowNumber: number,
 ): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
 
@@ -291,7 +273,7 @@ async function switchTab(tabId: number, windowId: number) {
 
 async function closeTab(
   tabId: number,
-  mutate: MutatePromise<Tab[], undefined>
+  mutate: MutatePromise<Tab[], undefined>,
 ) {
   const toast = await showToast({
     style: Toast.Style.Animated,
@@ -316,7 +298,7 @@ async function closeTab(
         optimisticUpdate(data) {
           return (data ?? []).filter((t) => t.id !== tabId);
         },
-      }
+      },
     );
     toast.style = Toast.Style.Success;
     toast.title = "Tab closed";
@@ -336,7 +318,7 @@ async function fetchAllTabs(): Promise<Tab[]> {
 
   while (hasMore && pages < maxPages) {
     const res = await fetch(
-      `http://127.0.0.1:${getPort()}/tabs?offset=${allTabs.length}`
+      `http://127.0.0.1:${getPort()}/tabs?offset=${allTabs.length}`,
     );
     if (!res.ok) {
       const body = (await res
@@ -370,8 +352,8 @@ export default function SearchTabs() {
   const [classifiedError, setClassifiedError] =
     useState<ClassifiedError | null>(null);
 
-  const handleError = useCallback((error: Error) => {
-    setClassifiedError(classifyError(error));
+  const handleError = useCallback(async (error: Error) => {
+    setClassifiedError(await classifyError(error));
   }, []);
 
   const handleData = useCallback(() => {
@@ -397,7 +379,7 @@ export default function SearchTabs() {
     {
       onError: handleError,
       onData: handleData,
-    }
+    },
   );
   // Watch ~/.raycast-firefox/port for changes. The native host writes this
   // file on startup and removes it when Firefox disconnects (stdin EOF).
@@ -441,9 +423,9 @@ export default function SearchTabs() {
               t.favIconUrl &&
               !t.favIconUrl.startsWith("data:") &&
               !favicons[t.favIconUrl] &&
-              !fetchedRef.current.has(t.favIconUrl)
+              !fetchedRef.current.has(t.favIconUrl),
           )
-          .map((t) => t.favIconUrl as string)
+          .map((t) => t.favIconUrl as string),
       ),
     ];
 
@@ -461,7 +443,7 @@ export default function SearchTabs() {
     urlsToFetch.forEach(async (url) => {
       try {
         const res = await fetch(
-          `http://127.0.0.1:${getPort()}/favicon?url=${encodeURIComponent(url)}`
+          `http://127.0.0.1:${getPort()}/favicon?url=${encodeURIComponent(url)}`,
         );
         if (res.ok) {
           const json = (await res.json()) as {
@@ -485,12 +467,12 @@ export default function SearchTabs() {
 
   // Sort tabs by most recently accessed first
   const sortedTabs = [...tabs].sort(
-    (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0)
+    (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0),
   );
 
   // Compute unique sorted window IDs for window number assignment
   const windowIds = [...new Set(sortedTabs.map((t) => t.windowId))].sort(
-    (a, b) => a - b
+    (a, b) => a - b,
   );
 
   return (
@@ -553,7 +535,7 @@ export default function SearchTabs() {
           keywords={urlKeywords(tab.url)}
           accessories={buildAccessories(
             tab,
-            getWindowNumber(tab.windowId, windowIds)
+            getWindowNumber(tab.windowId, windowIds),
           )}
           actions={
             <ActionPanel>
