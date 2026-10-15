@@ -1,5 +1,11 @@
 # raycast-firefox-extension
 
+## 1.0.3
+
+### Patch Changes
+
+- [#10](https://github.com/toshi38/raycast-firefox/pull/10) [`02e5add`](https://github.com/toshi38/raycast-firefox/commit/02e5adda06f59b02c590807e245bcd1e2e9616c6) Thanks [@toshi38](https://github.com/toshi38)! - Reconnect to the native host automatically when the native messaging port drops, so Raycast recovers without reloading the extension in Firefox.
+
 ## 1.0.2
 
 ### Patch Changes
