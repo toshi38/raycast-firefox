@@ -5,8 +5,9 @@
  * for tab management commands: list-tabs, switch-tab, close-tab.
  *
  * Connects to native host eagerly on load so the host process starts
- * immediately. Auto-reconnects after disconnection by nulling the port
- * reference — next getPort() call re-establishes the connection.
+ * immediately. Reconnects with exponential backoff whenever the native port
+ * disconnects, because the native host only ever talks back over an existing
+ * port and cannot reopen one itself.
  */
 
 "use strict";
@@ -15,12 +16,17 @@ const NATIVE_APP_NAME = "raycast_firefox";
 const MAX_RECENT_MESSAGES = 50;
 const DEFAULT_PAGE_SIZE = 500;
 const MAX_RESPONSE_BYTES = 512 * 1024; // Keep responses well under the 1MB native messaging limit
+const RECONNECT_BASE_DELAY_MS = 1000;
+const RECONNECT_MAX_DELAY_MS = 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Native port management
 // ---------------------------------------------------------------------------
 
 let port = null;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+let connectedAt = 0;
 const recentMessages = [];
 
 /**
@@ -51,6 +57,7 @@ const getPort = () => {
 
   console.log("[Raycast Firefox] Connecting to native host:", NATIVE_APP_NAME);
   port = browser.runtime.connectNative(NATIVE_APP_NAME);
+  connectedAt = Date.now();
 
   port.onMessage.addListener((msg) => {
     console.log("[Raycast Firefox] Received from native host:", msg);
@@ -65,9 +72,34 @@ const getPort = () => {
       err ? err.message : "(no error)"
     );
     port = null;
+    // A port that stayed up for a while was healthy, so start backoff afresh.
+    if (Date.now() - connectedAt >= RECONNECT_MAX_DELAY_MS) {
+      reconnectAttempts = 0;
+    }
+    scheduleReconnect();
   });
 
   return port;
+};
+
+/**
+ * Re-establish the native port after a delay that doubles with each
+ * consecutive short-lived connection, capped at RECONNECT_MAX_DELAY_MS.
+ */
+const scheduleReconnect = () => {
+  if (reconnectTimer) {
+    return;
+  }
+  const delay = Math.min(
+    RECONNECT_BASE_DELAY_MS * 2 ** reconnectAttempts,
+    RECONNECT_MAX_DELAY_MS
+  );
+  reconnectAttempts += 1;
+  console.log(`[Raycast Firefox] Reconnecting to native host in ${delay}ms`);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    getPort();
+  }, delay);
 };
 
 // ---------------------------------------------------------------------------
