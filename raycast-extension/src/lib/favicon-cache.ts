@@ -57,7 +57,7 @@ function pruneCache() {
  * byte by byte so a stray `%` or non-UTF-8 escape doesn't throw.
  */
 function decodeDataUri(
-  dataUri: string,
+  dataUri: string
 ): { mime: string; bytes: Buffer } | null {
   const comma = dataUri.indexOf(",");
   if (!dataUri.startsWith("data:") || comma < 0) return null;
