@@ -26,6 +26,7 @@ import {
   showActionError,
 } from "./lib/errors";
 import { AMO_URL } from "./lib/constants";
+import { faviconPath } from "./lib/favicon-cache";
 import { getPort } from "./lib/setup";
 
 // -- Types matching the native host HTTP API response --
@@ -182,14 +183,14 @@ function getTabIcon(
   tab: Tab,
   favicons: Record<string, string>,
 ): Image.ImageLike {
-  // Use data URIs directly from Firefox (most common case)
-  if (tab.favIconUrl?.startsWith("data:")) {
-    return { source: tab.favIconUrl, mask: Image.Mask.RoundedRectangle };
-  }
-  // Use cached favicon fetched via native host for http(s) URLs
-  if (tab.favIconUrl && favicons[tab.favIconUrl]) {
+  // Data URIs come directly from Firefox (most common case); http(s)
+  // favicons are fetched via the native host into `favicons`.
+  const dataUri = tab.favIconUrl?.startsWith("data:")
+    ? tab.favIconUrl
+    : tab.favIconUrl && favicons[tab.favIconUrl];
+  if (dataUri) {
     return {
-      source: favicons[tab.favIconUrl],
+      source: faviconPath(dataUri) ?? dataUri,
       mask: Image.Mask.RoundedRectangle,
     };
   }
