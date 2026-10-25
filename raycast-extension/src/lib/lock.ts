@@ -19,6 +19,10 @@ import { dirname } from "path";
  * checking that what was moved is the same directory that was found stale.
  * If it isn't, another command took the lock over in the meantime: its lock
  * is put back and this command steps aside.
+ *
+ * A holder can still lose its lock, e.g. when the Mac wakes from sleep
+ * before the heartbeat catches up. It then neither refreshes nor removes the
+ * other command's lock: both only touch the directory this holder created.
  */
 export async function withLock<T>(
   lockPath: string,
@@ -37,12 +41,21 @@ export async function withLock<T>(
 ): Promise<{ ran: true; value: T } | { ran: false }> {
   mkdirSync(dirname(lockPath), { recursive: true });
   if (!acquire(lockPath, staleMs, now, stat)) return { ran: false };
+  const ownIno = stat(lockPath).ino;
+  const stillOwned = () => {
+    try {
+      return stat(lockPath).ino === ownIno;
+    } catch {
+      return false;
+    }
+  };
   const heartbeat = setInterval(() => {
+    if (!stillOwned()) return;
     try {
       const at = new Date();
       utimesSync(lockPath, at, at);
     } catch {
-      // Released or taken over: nothing to refresh
+      // Released in the meantime: nothing to refresh
     }
   }, heartbeatMs);
   heartbeat.unref();
@@ -50,7 +63,7 @@ export async function withLock<T>(
     return { ran: true, value: await fn() };
   } finally {
     clearInterval(heartbeat);
-    rmSync(lockPath, { recursive: true, force: true });
+    if (stillOwned()) rmSync(lockPath, { recursive: true, force: true });
   }
 }
 

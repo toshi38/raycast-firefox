@@ -120,17 +120,17 @@ describe("withLock heartbeat", () => {
       lock,
       async () => {
         // Longer than staleMs: only the heartbeat keeps the lock fresh.
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((r) => setTimeout(r, 1000));
         const other = await withLock(
           lock,
           async () => {
             otherRan = true;
           },
-          { staleMs: 100 }
+          { staleMs: 500 }
         );
         assert.deepEqual(other, { ran: false });
       },
-      { staleMs: 100, heartbeatMs: 20 }
+      { staleMs: 500, heartbeatMs: 20 }
     );
     assert.equal(otherRan, false);
   });
@@ -148,5 +148,31 @@ describe("withLock heartbeat", () => {
     mkdirSync(lock);
     const result = await withLock(lock, async () => "should not run");
     assert.deepEqual(result, { ran: false });
+  });
+});
+
+describe("withLock after losing the lock", () => {
+  test("doesn't remove the lock another command took over while this one held it", async () => {
+    // E.g. the Mac slept mid-install and the other command took over on wake.
+    await withLock(lock, async () => {
+      rmSync(lock, { recursive: true });
+      mkdirSync(lock); // the other command's lock
+    });
+    assert.equal(existsSync(lock), true, "the other command still holds its lock");
+  });
+
+  test("doesn't keep refreshing a lock it no longer owns", async () => {
+    const before = (Date.now() - 60 * 1000) / 1000;
+    await withLock(
+      lock,
+      async () => {
+        rmSync(lock, { recursive: true });
+        mkdirSync(lock);
+        utimesSync(lock, before, before); // the other command's lock, last refreshed a minute ago
+        await new Promise((r) => setTimeout(r, 100));
+      },
+      { heartbeatMs: 10 }
+    );
+    assert.ok(Math.abs(statSync(lock).mtimeMs - before * 1000) < 1000, "left untouched");
   });
 });
