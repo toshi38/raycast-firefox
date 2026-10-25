@@ -19,8 +19,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type ClassifiedError, FailureMode, classifyError, fetchWithRetry, showActionError } from "./lib/errors";
 import { AMO_URL } from "./lib/constants";
 import { faviconPath } from "./lib/favicon-cache";
-import { CONFIG_DIR, type Host, fetchFromHosts, readHosts } from "./lib/hosts";
-import { type ProfileLabel, labelProfile, loadProfiles } from "./lib/profiles";
+import { CONFIG_DIR, type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "./lib/hosts";
+import { type ProfileLabel, labelHosts, loadProfiles } from "./lib/profiles";
 
 // -- Types matching the native host HTTP API response --
 
@@ -59,15 +59,6 @@ interface TabsResponse {
 /** A tab together with the native host (and so the Firefox profile) it came from. */
 interface HostTab extends Tab {
   host: Host;
-}
-
-/** Tab and window IDs are only unique within one Firefox profile. */
-function tabKey(tab: HostTab): string {
-  return `${tab.host.key}:${tab.id}`;
-}
-
-function windowKey(tab: HostTab): string {
-  return `${tab.host.key}:${tab.windowId}`;
 }
 
 // -- URL helpers --
@@ -418,22 +409,14 @@ export default function SearchTabs() {
 
   // Label each connected profile. With a single profile there is nothing to
   // tell apart, so tabs keep the plain window tag.
-  const profileLabels = useMemo(() => {
-    const hosts = new Map(tabs.map((t) => [t.host.key, t.host]));
-    const labels = new Map<string, ProfileLabel>();
-    if (hosts.size < 2) return labels;
-    for (const host of hosts.values()) {
-      labels.set(
-        host.key,
-        labelProfile(host.profilePath, profiles) ?? {
-          name: `Firefox (process ${host.firefoxPid ?? host.port})`,
-          icon: { name: "PersonCircle" },
-          colorIndex: labels.size,
-        }
-      );
-    }
-    return labels;
-  }, [tabs, profiles]);
+  const profileLabels = useMemo(
+    () =>
+      labelHosts(
+        tabs.map((t) => t.host),
+        profiles
+      ),
+    [tabs, profiles]
+  );
 
   const [favicons, setFavicons] = useState<Record<string, string>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
@@ -500,13 +483,10 @@ export default function SearchTabs() {
 
   // Number windows across all profiles, grouped by profile, so each W<n> is
   // unique and a profile's windows sit together.
-  const windowNumbers = useMemo(() => {
-    const profileOrder = (t: HostTab) => profileLabels.get(t.host.key)?.colorIndex ?? 0;
-    const windows = [...new Map(tabs.map((t) => [windowKey(t), t])).values()].sort(
-      (a, b) => profileOrder(a) - profileOrder(b) || a.host.key.localeCompare(b.host.key) || a.windowId - b.windowId
-    );
-    return new Map(windows.map((t, i) => [windowKey(t), i + 1]));
-  }, [tabs, profileLabels]);
+  const windowNumbers = useMemo(
+    () => numberWindows(tabs, (hostKey) => profileLabels.get(hostKey)?.colorIndex ?? 0),
+    [tabs, profileLabels]
+  );
 
   return (
     <List

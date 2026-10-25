@@ -195,3 +195,29 @@ export function labelProfile(profilePath: string | null, profiles: FirefoxProfil
     colorIndex: (index >= 0 ? index : profiles.length) % PROFILE_COLOR_COUNT,
   };
 }
+
+/**
+ * Label each connected host's profile, keyed by host key. Returns no labels
+ * for a single host: there is nothing to tell apart, so tabs keep the plain
+ * window tag. A host that can't say which profile it serves is labelled by
+ * its Firefox process.
+ */
+export function labelHosts(
+  hosts: Array<{ key: string; profilePath: string | null; firefoxPid: number | null; port: number }>,
+  profiles: FirefoxProfile[]
+): Map<string, ProfileLabel> {
+  const unique = [...new Map(hosts.map((h) => [h.key, h])).values()];
+  const labels = new Map<string, ProfileLabel>();
+  if (unique.length < 2) return labels;
+  for (const host of unique) {
+    labels.set(
+      host.key,
+      labelProfile(host.profilePath, profiles) ?? {
+        name: `Firefox (process ${host.firefoxPid ?? host.port})`,
+        icon: { name: DEFAULT_AVATAR_ICON },
+        colorIndex: labels.size % PROFILE_COLOR_COUNT,
+      }
+    );
+  }
+  return labels;
+}

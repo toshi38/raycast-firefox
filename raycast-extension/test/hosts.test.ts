@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
-import { type Host, fetchFromHosts, readHosts } from "../src/lib/hosts.ts";
+import { type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "../src/lib/hosts.ts";
 
 let dir: string;
 
@@ -120,5 +120,46 @@ describe("fetchFromHosts", () => {
 
   test("resolves empty for no hosts", async () => {
     assert.deepEqual(await fetchFromHosts([], async () => ["x"]), []);
+  });
+});
+
+describe("tabKey and windowKey", () => {
+  test("keep the same tab and window IDs from different profiles apart", () => {
+    const a = { host: { key: "500" }, id: 1, windowId: 17 };
+    const b = { host: { key: "600" }, id: 1, windowId: 17 };
+    assert.notEqual(tabKey(a), tabKey(b));
+    assert.notEqual(windowKey(a), windowKey(b));
+  });
+});
+
+describe("numberWindows", () => {
+  const tab = (hostKey: string, windowId: number, id = windowId) => ({ host: { key: hostKey }, id, windowId });
+
+  test("numbers windows from 1, grouped by profile order then window ID", () => {
+    const tabs = [tab("b", 9), tab("a", 30), tab("a", 4), tab("b", 2), tab("a", 4, 99)];
+    const order = (key: string) => ({ a: 0, b: 1 }[key] ?? 0);
+
+    const numbers = numberWindows(tabs, order);
+
+    assert.deepEqual(
+      [...numbers],
+      [
+        ["a:4", 1],
+        ["a:30", 2],
+        ["b:2", 3],
+        ["b:9", 4],
+      ]
+    );
+  });
+
+  test("gives the same window ID in two profiles two numbers", () => {
+    const numbers = numberWindows([tab("a", 17), tab("b", 17)], () => 0);
+    assert.deepEqual([...numbers.values()].sort(), [1, 2]);
+  });
+
+  test("falls back to host key order when profiles share an order", () => {
+    const numbers = numberWindows([tab("b", 1), tab("a", 5)], () => 0);
+    assert.equal(numbers.get("a:5"), 1);
+    assert.equal(numbers.get("b:1"), 2);
   });
 });

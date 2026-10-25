@@ -96,3 +96,36 @@ export async function fetchFromHosts<T>(hosts: Host[], fetchOne: (host: Host) =>
   }
   return fulfilled.flatMap((r) => r.value);
 }
+
+/** A tab as fetched from a host. Tab and window IDs are only unique within one host. */
+interface HostScoped {
+  host: { key: string };
+  id: number;
+  windowId: number;
+}
+
+/** Identity of a tab across every connected profile. */
+export function tabKey(tab: HostScoped): string {
+  return `${tab.host.key}:${tab.id}`;
+}
+
+/** Identity of a window across every connected profile. */
+export function windowKey(tab: HostScoped): string {
+  return `${tab.host.key}:${tab.windowId}`;
+}
+
+/**
+ * Number every window 1..n across all profiles, keyed by windowKey. Windows
+ * are grouped by profile, in `profileOrder` (then host key) order, and by
+ * window ID within a profile, so each W<n> is unique and a profile's windows
+ * sit together.
+ */
+export function numberWindows(tabs: HostScoped[], profileOrder: (hostKey: string) => number): Map<string, number> {
+  const windows = [...new Map(tabs.map((t) => [windowKey(t), t])).values()].sort(
+    (a, b) =>
+      profileOrder(a.host.key) - profileOrder(b.host.key) ||
+      a.host.key.localeCompare(b.host.key) ||
+      a.windowId - b.windowId
+  );
+  return new Map(windows.map((t, i) => [windowKey(t), i + 1]));
+}

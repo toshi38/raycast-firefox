@@ -9,6 +9,7 @@ import {
   AVATAR_ICONS,
   DEFAULT_AVATAR_ICON,
   PROFILE_COLOR_COUNT,
+  labelHosts,
   labelProfile,
   loadProfiles,
   mergeProfiles,
@@ -205,5 +206,42 @@ describe("loadProfiles", () => {
       { path: join(dir, "Profiles/bbbb2222.Profile 1"), name: "Ikea - DA", avatar: "hammer" },
       { path: join(dir, "Profiles/aaaa1111.default"), name: "default", avatar: null },
     ]);
+  });
+});
+
+describe("labelHosts", () => {
+  const profiles = [
+    { path: "/p/a", name: "Original profile", avatar: "book" },
+    { path: "/p/b", name: "Ikea - DA", avatar: "hammer" },
+  ];
+  const host = (key: string, profilePath: string | null, firefoxPid: number | null = Number(key), port = 26394) => ({
+    key,
+    profilePath,
+    firefoxPid,
+    port,
+  });
+
+  test("labels nothing with a single profile, so tabs keep the plain window tag", () => {
+    assert.equal(labelHosts([host("1", "/p/a"), host("1", "/p/a")], profiles).size, 0);
+  });
+
+  test("labels each host with its profile", () => {
+    const labels = labelHosts([host("1", "/p/a"), host("2", "/p/b"), host("1", "/p/a")], profiles);
+    assert.deepEqual(
+      [...labels].map(([key, label]) => [key, label.name, label.colorIndex]),
+      [
+        ["1", "Original profile", 0],
+        ["2", "Ikea - DA", 1],
+      ]
+    );
+  });
+
+  test("labels a host that can't name its profile by its Firefox process", () => {
+    const labels = labelHosts([host("1", "/p/a"), host("port-26395", null, null, 26395)], profiles);
+    assert.deepEqual(labels.get("port-26395"), {
+      name: "Firefox (process 26395)",
+      icon: { name: DEFAULT_AVATAR_ICON },
+      colorIndex: 1,
+    });
   });
 });
