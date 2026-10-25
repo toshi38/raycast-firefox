@@ -1,5 +1,15 @@
 # raycast-firefox-native-host
 
+## 1.2.0
+
+### Minor Changes
+
+- [#12](https://github.com/toshi38/raycast-firefox/pull/12) [`44a6059`](https://github.com/toshi38/raycast-firefox/commit/44a6059ac230cefb7f6957e01ee5d0824e7d77aa) Thanks [@toshi38](https://github.com/toshi38)! - Support several Firefox profiles running at once. Each profile's host now registers itself in `~/.raycast-firefox/hosts/<firefox-pid>.json` with its port and profile directory, only replaces a previous host for the same Firefox process, and only removes files it wrote. Hosts also exit when Firefox closes their native messaging connection.
+
+### Patch Changes
+
+- [#12](https://github.com/toshi38/raycast-firefox/pull/12) [`efa76fc`](https://github.com/toshi38/raycast-firefox/commit/efa76fca2edff04ce3bc0fd8258dc94ec923e03a) Thanks [@toshi38](https://github.com/toshi38)! - Raise the Firefox profile that owns the tab when switching tabs, instead of whichever Firefox process macOS lists first when several profiles are open.
+
 ## 1.1.1
 
 ### Patch Changes
