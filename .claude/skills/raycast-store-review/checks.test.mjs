@@ -118,7 +118,7 @@ describe("checkPackageJson", () => {
     categories: ["Applications", "Productivity"],
     commands: [
       { name: "search-tabs", title: "Search Firefox Tabs", subtitle: "Firefox", description: "Search tabs" },
-      { name: "setup-bridge", title: "Set Up Firefox Bridge", subtitle: "Firefox", description: "Set up" },
+      { name: "setup-bridge", title: "Set up Firefox Bridge", subtitle: "Firefox", description: "Set up" },
     ],
   };
 
@@ -136,7 +136,7 @@ describe("checkPackageJson", () => {
 
   test("warns about 'Setup' used as a verb in a command title", () => {
     const pkg = { ...base, commands: [base.commands[0], { ...base.commands[1], title: "Setup Firefox Bridge" }] };
-    assert.match(messages(checkPackageJson(pkg, base)), /"Set Up"/);
+    assert.match(messages(checkPackageJson(pkg, base)), /"Set up"/);
   });
 
   test("warns when several commands have no subtitle", () => {
@@ -194,7 +194,7 @@ describe("checkSource", () => {
   });
 
   test("warns about an action titled with 'Setup' as a verb", () => {
-    assert.match(messages(src(`<Action title="Setup Native Host" onAction={f} />`)), /"Set Up"/);
+    assert.match(messages(src(`<Action title="Setup Native Host" onAction={f} />`)), /"Set up"/);
   });
 });
 
