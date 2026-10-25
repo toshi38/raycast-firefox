@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
 import {
   type Host,
-  createStaleGuard,
   fetchFromHosts,
   numberWindows,
   readHosts,
@@ -237,6 +236,10 @@ describe("tabsChanged", () => {
     assert.equal(tabsChanged([blue], [red]), true);
   });
 
+  test("detects a host that came back on another port, so actions go to the right one", () => {
+    assert.equal(tabsChanged([tab()], [tab({ host: { key: "78957", port: 26396 } })]), true);
+  });
+
   test("tells the same tab ID in another profile apart", () => {
     assert.equal(tabsChanged([tab()], [tab({ host: { key: "99313" } })]), true);
   });
@@ -244,36 +247,5 @@ describe("tabsChanged", () => {
   test("reports no change for an identical refresh, so the list doesn't re-render", () => {
     assert.equal(tabsChanged([tab(), tab({ id: 2 })], [tab(), tab({ id: 2 })]), false);
     assert.equal(tabsChanged([], []), false);
-  });
-});
-
-describe("createStaleGuard", () => {
-  test("a request stays current while nothing newer happens", () => {
-    const guard = createStaleGuard();
-    const isCurrent = guard.begin();
-    assert.equal(isCurrent(), true);
-  });
-
-  test("a request started before a close or full load is stale afterwards", () => {
-    // A background refresh starts, a tab is closed, then the refresh finishes.
-    const guard = createStaleGuard();
-    const isCurrent = guard.begin();
-    guard.invalidate();
-    assert.equal(isCurrent(), false);
-  });
-
-  test("a request started after the invalidation is current", () => {
-    const guard = createStaleGuard();
-    guard.invalidate();
-    const isCurrent = guard.begin();
-    assert.equal(isCurrent(), true);
-  });
-
-  test("each request is judged on its own", () => {
-    const guard = createStaleGuard();
-    const older = guard.begin();
-    guard.invalidate();
-    const newer = guard.begin();
-    assert.deepEqual([older(), newer()], [false, true]);
   });
 });

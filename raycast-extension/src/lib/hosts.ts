@@ -115,7 +115,7 @@ export async function fetchFromHosts<T>(
 
 /** A tab as fetched from a host. Tab and window IDs are only unique within one host. */
 interface HostScoped {
-  host: { key: string };
+  host: { key: string; port?: number };
   id: number;
   windowId: number;
 }
@@ -164,6 +164,7 @@ interface ShownTab extends HostScoped {
 function tabSignature(t: ShownTab): string {
   return JSON.stringify([
     tabKey(t),
+    t.host.port,
     t.windowId,
     t.title,
     t.url,
@@ -185,24 +186,4 @@ function tabSignature(t: ShownTab): string {
 export function tabsChanged(shown: ShownTab[], fresh: ShownTab[]): boolean {
   if (shown.length !== fresh.length) return true;
   return shown.some((t, i) => tabSignature(t) !== tabSignature(fresh[i]));
-}
-
-/**
- * Drops background results that something newer has overtaken. Call
- * `invalidate` whenever newer tab state exists (a full load finished, a tab
- * was closed); a background request that `begin` started before that is
- * stale, and its result must not replace the newer state.
- */
-export function createStaleGuard() {
-  let generation = 0;
-  return {
-    invalidate() {
-      generation++;
-    },
-    /** Start a background request. The returned function says whether its result is still current. */
-    begin(): () => boolean {
-      const startedAt = generation;
-      return () => startedAt === generation;
-    },
-  };
 }

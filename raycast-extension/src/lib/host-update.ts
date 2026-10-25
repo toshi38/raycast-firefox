@@ -1,6 +1,14 @@
 import { Toast, showToast } from "@raycast/api";
 import { CONFIG_DIR } from "./hosts";
-import { hostUpdateNeeded, outdatedHostPids, planHostUpdate, restartOutdatedHosts } from "./host-version";
+import { join } from "path";
+import {
+  hostUpdateNeeded,
+  outdatedHostPids,
+  planHostUpdate,
+  restartOutdatedHosts,
+  restartableHostPids,
+} from "./host-version";
+import { withLock } from "./lock";
 import { installNativeHost, refreshNodeSymlink } from "./installer";
 import PINNED_HOST from "./native-host-pin.json";
 import {
@@ -76,6 +84,18 @@ function reportRestart(toast: Toast, stopped: number) {
       : `Version ${PINNED_HOST_VERSION}`;
 }
 
+/** Shared by every command, so two never install or restart the host at once. */
+const UPDATE_LOCK = join(CONFIG_DIR, "update.lock");
+
+/**
+ * Run an install or update holding the cross-command lock. Resolves
+ * `undefined` when another command is already doing it.
+ */
+export async function runLocked<T>(fn: () => Promise<T>): Promise<T | undefined> {
+  const result = await withLock(UPDATE_LOCK, fn);
+  return result.ran ? result.value : undefined;
+}
+
 /**
  * Keep an installed native host current when a command opens:
  * - repair the Node.js link if Raycast has moved its bundled runtime;
@@ -84,9 +104,12 @@ function reportRestart(toast: Toast, stopped: number) {
  *   new one, including when an earlier update installed the files but
  *   failed before restarting them.
  *
- * Shows a toast for anything it changes. `force` reinstalls even when the
+ * Only hosts that are running the installed bundle count, so a leftover
+ * host.pid or record never makes it look as if something needs doing. Shows
+ * a toast only when it changes something. `force` reinstalls even when the
  * installed version matches, for Try Again after a failed update. Resolves
- * true if it installed or restarted anything. Concurrent calls share one run.
+ * true if it installed or restarted anything. Runs in this command are
+ * shared, and the lock keeps other commands out.
  */
 export function updateOutdatedHost({ force = false } = {}): Promise<boolean> {
   const installed = installedHostVersion();
@@ -97,12 +120,11 @@ export function updateOutdatedHost({ force = false } = {}): Promise<boolean> {
       // run.sh falls back to other Node.js locations
     }
   }
-  const plan = force
-    ? "install"
-    : planHostUpdate(installed, PINNED_HOST_VERSION, outdatedHostPids(CONFIG_DIR, PINNED_HOST_VERSION));
+  const restartable = restartableHostPids(outdatedHostPids(CONFIG_DIR, PINNED_HOST_VERSION));
+  const plan = force ? "install" : planHostUpdate(installed, PINNED_HOST_VERSION, restartable);
   if (plan === "none") return Promise.resolve(false);
 
-  updating ??= (async () => {
+  updating ??= runLocked(async () => {
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Updating Firefox Bridge",
@@ -118,10 +140,18 @@ export function updateOutdatedHost({ force = false } = {}): Promise<boolean> {
         return false;
       }
     }
-    reportRestart(toast, restartOutdatedHosts(CONFIG_DIR, PINNED_HOST_VERSION));
+    const stopped = restartOutdatedHosts(CONFIG_DIR, PINNED_HOST_VERSION);
+    if (plan === "restart" && stopped === 0) {
+      // The hosts exited on their own in the meantime: nothing to report.
+      await toast.hide();
+      return false;
+    }
+    reportRestart(toast, stopped);
     return true;
-  })().finally(() => {
-    updating = null;
-  });
+  })
+    .then((done) => done ?? false)
+    .finally(() => {
+      updating = null;
+    });
   return updating;
 }

@@ -3,11 +3,14 @@ import { describe, test } from "node:test";
 import {
   EXTENSION_ID,
   type ExtensionState,
+  firefoxExecutableFor,
+  isFirefoxExecutable,
   openInProfile,
   parseRunningProfiles,
   profileStatuses,
   profilesNeedingSetup,
   readExtensionState,
+  sameSetup,
 } from "../src/lib/profile-status.ts";
 
 const PROFILES = "/Users/me/Library/Application Support/Firefox/Profiles";
@@ -188,20 +191,80 @@ describe("profilesNeedingSetup", () => {
   });
 });
 
+describe("isFirefoxExecutable", () => {
+  test("recognises Firefox, Developer Edition and copies outside /Applications", () => {
+    assert.equal(isFirefoxExecutable("/Applications/Firefox.app/Contents/MacOS/firefox\n"), true);
+    assert.equal(
+      isFirefoxExecutable("/Users/me/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox"),
+      true
+    );
+  });
+
+  test("rejects other processes and helpers", () => {
+    assert.equal(isFirefoxExecutable("/sbin/launchd"), false);
+    assert.equal(
+      isFirefoxExecutable(
+        "/Applications/Firefox.app/Contents/MacOS/plugin-container.app/Contents/MacOS/plugin-container"
+      ),
+      false
+    );
+    assert.equal(isFirefoxExecutable(""), false);
+  });
+});
+
+describe("firefoxExecutableFor", () => {
+  const nightly = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox";
+  const regular = "/Applications/Firefox.app/Contents/MacOS/firefox";
+
+  test("uses the executable the profile is running from", () => {
+    const exe = firefoxExecutableFor(78957, [99313], {
+      executable: (pid) => (pid === 78957 ? nightly : regular),
+      exists: () => false,
+    });
+    assert.equal(exe, nightly);
+  });
+
+  test("for a profile that isn't running, uses the one another running profile uses", () => {
+    const exe = firefoxExecutableFor(null, [99313], { executable: () => nightly, exists: () => false });
+    assert.equal(exe, nightly);
+  });
+
+  test("falls back to a standard install when no Firefox is running", () => {
+    const exe = firefoxExecutableFor(null, [], {
+      exists: (p) => p === "/home/Applications/Firefox.app/Contents/MacOS/firefox",
+      defaults: [regular, "/home/Applications/Firefox.app/Contents/MacOS/firefox"],
+    });
+    assert.equal(exe, "/home/Applications/Firefox.app/Contents/MacOS/firefox");
+  });
+
+  test("returns null when Firefox can't be found", () => {
+    assert.equal(firefoxExecutableFor(null, [], { exists: () => false }), null);
+  });
+});
+
 describe("openInProfile", () => {
-  function fakeSpawn() {
+  function fakeSpawn(outcome: "spawn" | Error) {
     const calls: unknown[][] = [];
     let unrefs = 0;
     const run = ((...args: unknown[]) => {
       calls.push(args);
-      return { unref: () => unrefs++ };
-    }) as unknown as Parameters<typeof openInProfile>[2];
+      const handlers: Record<string, (arg?: unknown) => void> = {};
+      const child = {
+        once: (event: string, fn: (arg?: unknown) => void) => {
+          handlers[event] = fn;
+          return child;
+        },
+        unref: () => void unrefs++,
+      };
+      queueMicrotask(() => (outcome === "spawn" ? handlers.spawn?.() : handlers.error?.(outcome)));
+      return child;
+    }) as unknown as Parameters<typeof openInProfile>[3];
     return { run, calls, unrefs: () => unrefs };
   }
 
-  test("starts Firefox with the profile and URL, detached from Raycast", () => {
-    const { run, calls, unrefs } = fakeSpawn();
-    openInProfile(B, "https://addons.mozilla.org/x/", run);
+  test("starts Firefox's executable with the profile and URL, detached from Raycast", async () => {
+    const { run, calls, unrefs } = fakeSpawn("spawn");
+    await openInProfile(B, "https://addons.mozilla.org/x/", "/Applications/Firefox.app/Contents/MacOS/firefox", run);
     assert.deepEqual(calls, [
       [
         "/Applications/Firefox.app/Contents/MacOS/firefox",
@@ -212,9 +275,55 @@ describe("openInProfile", () => {
     assert.equal(unrefs(), 1);
   });
 
-  test("passes only the profile when there is no URL", () => {
-    const { run, calls } = fakeSpawn();
-    openInProfile(B, undefined, run);
+  test("passes only the profile when there is no URL", async () => {
+    const { run, calls } = fakeSpawn("spawn");
+    await openInProfile(B, undefined, "/x.app/Contents/MacOS/firefox", run);
     assert.deepEqual(calls[0][1], ["--profile", B]);
+  });
+
+  test("rejects instead of crashing when the executable can't be started", async () => {
+    const { run } = fakeSpawn(Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" }));
+    await assert.rejects(openInProfile(B, undefined, "/missing.app/Contents/MacOS/firefox", run), /ENOENT/);
+  });
+
+  test("rejects when Firefox can't be found at all", async () => {
+    await assert.rejects(openInProfile(B, undefined, null), /couldn't be found/);
+  });
+});
+
+describe("sameSetup", () => {
+  const profile = { path: "/p/a", name: "A", avatar: null };
+  const status = (state: "connected" | "needs-install") => ({
+    profile,
+    firefoxPid: 1,
+    extension: "missing" as const,
+    state,
+  });
+
+  test("treats an identical re-check as unchanged, so the list doesn't re-render", () => {
+    assert.equal(
+      sameSetup(
+        { statuses: [status("connected")], profiles: [profile] },
+        { statuses: [status("connected")], profiles: [profile] }
+      ),
+      true
+    );
+  });
+
+  test("notices a profile whose state changed", () => {
+    assert.equal(
+      sameSetup(
+        { statuses: [status("connected")], profiles: [profile] },
+        { statuses: [status("needs-install")], profiles: [profile] }
+      ),
+      false
+    );
+  });
+
+  test("notices a profile that started or quit", () => {
+    assert.equal(
+      sameSetup({ statuses: [status("connected")], profiles: [profile] }, { statuses: [], profiles: [profile] }),
+      false
+    );
   });
 });

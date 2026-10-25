@@ -1,11 +1,10 @@
-import { execFile, spawn } from "child_process";
+import { execFile, execFileSync, spawn } from "child_process";
 import { existsSync, readFileSync } from "fs";
+import { homedir } from "os";
 import { basename, dirname, join, resolve } from "path";
 import type { FirefoxProfile } from "./profiles";
 
 export const EXTENSION_ID = "raycast-firefox@lau.engineering";
-
-const FIREFOX_BINARY = "/Applications/Firefox.app/Contents/MacOS/firefox";
 
 /**
  * Whether the companion extension is installed in a profile, from the
@@ -130,11 +129,88 @@ export function profilesNeedingSetup(statuses: ProfileStatus[]): ProfileStatus[]
   return statuses.filter((s) => s.state !== "connected" && s.state !== "not-running");
 }
 
+/** Whether `path` is the executable inside a Firefox app bundle. */
+export function isFirefoxExecutable(path: string): boolean {
+  return /\.app\/Contents\/MacOS\/firefox$/.test(path.trim());
+}
+
+function executableOf(pid: number): string {
+  try {
+    return execFileSync("ps", ["-o", "comm=", "-p", String(pid)], { encoding: "utf-8" }).trim();
+  } catch {
+    return "";
+  }
+}
+
+/** PIDs of every running Firefox process (one per running profile). */
+export function runningFirefoxPids(): number[] {
+  try {
+    return execFileSync("pgrep", ["-x", "firefox"], { encoding: "utf-8" })
+      .split("\n")
+      .map((line) => parseInt(line, 10))
+      .filter((pid) => pid > 0);
+  } catch {
+    return [];
+  }
+}
+
+const DEFAULT_EXECUTABLES = [
+  "/Applications/Firefox.app/Contents/MacOS/firefox",
+  join(homedir(), "Applications", "Firefox.app", "Contents", "MacOS", "firefox"),
+];
+
 /**
- * Open `url` in a specific Firefox profile. If that profile is already
- * running, Firefox hands the URL to it; otherwise this starts it.
+ * The Firefox executable to start for a profile: the one the profile is
+ * running from (so Developer Edition, Nightly and copies outside
+ * /Applications work), else the one another running profile uses, else a
+ * standard install. Null if there is none.
  */
-export function openInProfile(profilePath: string, url?: string, run: typeof spawn = spawn): void {
-  const args = ["--profile", profilePath, ...(url ? [url] : [])];
-  run(FIREFOX_BINARY, args, { detached: true, stdio: "ignore" }).unref();
+export function firefoxExecutableFor(
+  firefoxPid: number | null,
+  otherFirefoxPids: number[],
+  { executable = executableOf, exists = existsSync, defaults = DEFAULT_EXECUTABLES } = {}
+): string | null {
+  for (const pid of firefoxPid !== null ? [firefoxPid, ...otherFirefoxPids] : otherFirefoxPids) {
+    const path = executable(pid);
+    if (isFirefoxExecutable(path)) return path;
+  }
+  return defaults.find((path) => exists(path)) ?? null;
+}
+
+/**
+ * Open `url` in a specific Firefox profile by starting Firefox's own
+ * executable with `--profile`. If that profile is already running, Firefox
+ * hands the URL to it and the new process exits; otherwise this starts the
+ * profile. (Launching through `open -n` instead starts a second copy that
+ * doesn't hand the URL over.) Rejects if Firefox can't be started.
+ */
+export function openInProfile(
+  profilePath: string,
+  url: string | undefined,
+  executablePath: string | null,
+  run: typeof spawn = spawn
+): Promise<void> {
+  if (!executablePath) return Promise.reject(new Error("Firefox couldn't be found. Is it installed?"));
+  return new Promise((resolvePromise, reject) => {
+    const child = run(executablePath, ["--profile", profilePath, ...(url ? [url] : [])], {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.once("error", reject);
+    child.once("spawn", () => {
+      child.unref();
+      resolvePromise();
+    });
+  });
+}
+
+/** How often open commands re-check which profiles need setup. */
+export const SETUP_RECHECK_MS = 15000;
+
+/** Whether two setup checks found the same thing, so the list needn't re-render. */
+export function sameSetup(
+  a: { statuses: ProfileStatus[]; profiles: unknown[] },
+  b: { statuses: ProfileStatus[]; profiles: unknown[] }
+): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }

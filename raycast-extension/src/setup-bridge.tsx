@@ -1,7 +1,13 @@
 import { Action, ActionPanel, Color, Icon, List, Toast, showToast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useCallback, useEffect, useState } from "react";
-import { PINNED_HOST_VERSION, installAndRegister, isHostOutdated, updateOutdatedHost } from "./lib/host-update";
+import {
+  PINNED_HOST_VERSION,
+  installAndRegister,
+  isHostOutdated,
+  runLocked,
+  updateOutdatedHost,
+} from "./lib/host-update";
 import { profilesNeedingSetup } from "./lib/profile-status";
 import { ProfileSetupItem, SetupAction } from "./lib/profile-ui";
 import { installedHostVersion, isFirefoxInstalled, isNativeHostRegistered } from "./lib/setup";
@@ -19,7 +25,12 @@ export default function SetupBridge() {
   const firefoxInstalled = isFirefoxInstalled();
 
   const { data: setup, isLoading, revalidate } = usePromise(loadProfileStatuses, []);
-  useHostsWatcher(revalidate);
+  // A host starting or stopping can mean another command just updated it.
+  const onHostsChanged = useCallback(() => {
+    setHost(readHost());
+    revalidate();
+  }, [revalidate]);
+  useHostsWatcher(onHostsChanged);
 
   const install = useCallback(async () => {
     setInstalling(true);
@@ -28,9 +39,15 @@ export default function SetupBridge() {
       title: "Installing Firefox Bridge",
       message: "Downloading native host...",
     });
-    const ok = await installAndRegister(toast);
+    const ok = await runLocked(() => installAndRegister(toast));
     setHost(readHost());
     setInstalling(false);
+    if (ok === undefined) {
+      toast.style = Toast.Style.Success;
+      toast.title = "Firefox Bridge Is Being Updated";
+      toast.message = "Another command is installing the native host";
+      return;
+    }
     if (!ok) return;
 
     const { statuses } = await loadProfileStatuses();

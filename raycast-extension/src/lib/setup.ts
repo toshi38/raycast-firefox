@@ -1,3 +1,4 @@
+import { spawnSync } from "child_process";
 import { accessSync, constants, existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { dirname, join, resolve } from "path";
@@ -11,7 +12,9 @@ import { MANIFEST_PATH } from "./manifest";
  * Simple path check — macOS only (Raycast is macOS-only).
  */
 export function isFirefoxInstalled(): boolean {
-  return existsSync("/Applications/Firefox.app");
+  if (existsSync("/Applications/Firefox.app")) return true;
+  // Anywhere else (e.g. ~/Applications): ask Launch Services.
+  return spawnSync("/usr/bin/open", ["-Ra", "Firefox"], { stdio: "ignore" }).status === 0;
 }
 
 // -- Path resolution --
