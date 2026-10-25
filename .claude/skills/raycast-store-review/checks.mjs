@@ -104,11 +104,15 @@ export function titleCaseProblems(title) {
 }
 
 /**
- * "Setup" is a noun; as a verb in a title it is "Set up". Raycast's
- * @raycast/prefer-title-case lint rule keeps "up" lowercase, so "Set Up"
- * fails `ray lint`.
+ * "Setup" is a noun; as a verb in a title it is two words. The two places
+ * titles live disagree on the case of "up":
+ * - package.json titles: Greptile applies Apple Title Case and asks for
+ *   "Set Up" (raycast/extensions#32748).
+ * - Action titles in source: the @raycast/prefer-title-case lint rule keeps
+ *   "up" lowercase, so "Set Up" fails `ray lint`; use "Set up".
  */
 const SETUP_VERB = /^Setup\b/;
+const SET_UP_LOWERCASE = /\bSet up\b/;
 
 export function checkPackageJson(pkg, storePkg) {
   const out = [];
@@ -131,7 +135,8 @@ export function checkPackageJson(pkg, storePkg) {
     if (!title) continue;
     const bad = titleCaseProblems(title);
     if (bad.length) out.push(finding("warn", "package", `${what} "${title}" is not Title Case: ${bad.join(", ")}`, file));
-    if (SETUP_VERB.test(title)) out.push(finding("warn", "package", `${what} "${title}": as a verb it is "Set up" (titles use <verb> <noun>; ray lint keeps "up" lowercase)`, file));
+    if (SETUP_VERB.test(title)) out.push(finding("warn", "package", `${what} "${title}": as a verb it is "Set Up" (titles use <verb> <noun>)`, file));
+    if (SET_UP_LOWERCASE.test(title)) out.push(finding("warn", "package", `${what} "${title}": package.json titles use Apple Title Case, "Set Up" (raycast/extensions#32748)`, file));
   }
   const commands = pkg.commands ?? [];
   for (const c of commands) {
