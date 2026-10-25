@@ -105,7 +105,7 @@ export default function SetupBridge() {
 
   if (!firefoxInstalled) {
     return (
-      <List>
+      <List searchBarPlaceholder="Search profiles...">
         <List.EmptyView
           icon={Icon.Globe}
           title="Firefox Not Detected"
@@ -140,7 +140,7 @@ export default function SetupBridge() {
   );
 
   return (
-    <List isLoading={isLoading || installing}>
+    <List isLoading={isLoading || installing} searchBarPlaceholder="Search profiles...">
       <List.Section title="Native Host">
         <List.Item
           icon={Icon.Terminal}

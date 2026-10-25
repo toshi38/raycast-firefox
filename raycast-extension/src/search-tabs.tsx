@@ -5,11 +5,9 @@ import {
   Icon,
   Image,
   Keyboard,
-  LaunchType,
   List,
   Toast,
   closeMainWindow,
-  launchCommand,
   showToast,
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
@@ -20,7 +18,7 @@ import { AMO_URL } from "./lib/constants";
 import { faviconPath } from "./lib/favicon-cache";
 import { type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "./lib/hosts";
 import { profilesNeedingSetup } from "./lib/profile-status";
-import { ProfileSetupItem, SetupAction, profileColor, profileIcon } from "./lib/profile-ui";
+import { ProfileSetupItem, SetupAction, openSetupCommand, profileColor, profileIcon } from "./lib/profile-ui";
 import { type ProfileLabel, labelHosts } from "./lib/profiles";
 import { loadProfileStatuses } from "./lib/setup-status";
 import { useHostsWatcher } from "./lib/use-hosts-watcher";
@@ -502,16 +500,7 @@ export default function SearchTabs() {
                 <Action.OpenInBrowser title="Install Firefox Extension" url={AMO_URL} />
               )}
               {classifiedError.mode === FailureMode.HostNotRunning && (
-                <Action
-                  title="Set up Native Host"
-                  icon={Icon.Terminal}
-                  onAction={async () => {
-                    await launchCommand({
-                      name: "setup-bridge",
-                      type: LaunchType.UserInitiated,
-                    });
-                  }}
-                />
+                <Action title="Set up Native Host" icon={Icon.Terminal} onAction={openSetupCommand} />
               )}
               <Action
                 title="Retry"

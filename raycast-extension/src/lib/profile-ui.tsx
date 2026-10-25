@@ -1,4 +1,5 @@
 import { Action, Color, Icon, Image, LaunchType, List, Toast, launchCommand, showToast } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import type { ReactElement } from "react";
 import { AMO_URL } from "./constants";
 import { type ProfileStatus, openInProfile } from "./profile-status";
@@ -47,6 +48,15 @@ const STATE_TAGS: Record<ProfileStatus["state"], { value: string; color: Color }
   "not-running": { value: "Not Running", color: Color.SecondaryText },
 };
 
+/** Open Set up Firefox Bridge, showing a toast if Raycast can't launch it. */
+export async function openSetupCommand() {
+  try {
+    await launchCommand({ name: "setup-bridge", type: LaunchType.UserInitiated });
+  } catch (error) {
+    await showFailureToast(error, { title: "Couldn't open Set up Firefox Bridge" });
+  }
+}
+
 async function openAndConfirm(status: ProfileStatus, url: string | undefined, what: string) {
   openInProfile(status.profile.path, url);
   await showToast({ style: Toast.Style.Success, title: what, message: status.profile.name });
@@ -74,11 +84,7 @@ export function SetupAction({ status, inSetupCommand }: { status: ProfileStatus;
       );
     case "not-connected":
       return inSetupCommand ? null : (
-        <Action
-          title="Set up Native Host"
-          icon={Icon.Terminal}
-          onAction={() => launchCommand({ name: "setup-bridge", type: LaunchType.UserInitiated })}
-        />
+        <Action title="Set up Native Host" icon={Icon.Terminal} onAction={openSetupCommand} />
       );
     case "not-running":
       return (
