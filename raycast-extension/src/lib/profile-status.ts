@@ -85,6 +85,12 @@ export interface ProfileStatus {
 /**
  * Work out the setup state of every known profile, plus any running profile
  * Firefox's profile lists don't know about (one started with `--profile`).
+ *
+ * `connectedPaths` holds each serving host's profile path, or null for a
+ * host that can't say which profile it serves (one from before per-profile
+ * records, or whose profile lookup failed). Such a host is serving one of
+ * the running profiles that have the extension, so none of those is
+ * reported as not connected.
  */
 export function profileStatuses(
   profiles: FirefoxProfile[],
@@ -93,6 +99,7 @@ export function profileStatuses(
   extensionState: (profilePath: string) => ExtensionState = readExtensionState
 ): ProfileStatus[] {
   const connected = new Set(connectedPaths.filter((p): p is string => !!p).map((p) => resolve(p)));
+  const unattributedHost = connectedPaths.some((p) => !p);
   const known = new Set(profiles.map((p) => p.path));
   const extra: FirefoxProfile[] = [...running.keys()]
     .filter((path) => !known.has(path))
@@ -107,7 +114,7 @@ export function profileStatuses(
     } else if (firefoxPid === null) {
       state = "not-running";
     } else if (extension === "installed") {
-      state = "not-connected";
+      state = unattributedHost ? "connected" : "not-connected";
     } else if (extension === "disabled") {
       state = "disabled";
     } else {
@@ -127,7 +134,7 @@ export function profilesNeedingSetup(statuses: ProfileStatus[]): ProfileStatus[]
  * Open `url` in a specific Firefox profile. If that profile is already
  * running, Firefox hands the URL to it; otherwise this starts it.
  */
-export function openInProfile(profilePath: string, url?: string): void {
+export function openInProfile(profilePath: string, url?: string, run: typeof spawn = spawn): void {
   const args = ["--profile", profilePath, ...(url ? [url] : [])];
-  spawn(FIREFOX_BINARY, args, { detached: true, stdio: "ignore" }).unref();
+  run(FIREFOX_BINARY, args, { detached: true, stdio: "ignore" }).unref();
 }

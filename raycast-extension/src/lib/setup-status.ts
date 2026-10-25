@@ -8,17 +8,10 @@ import { type FirefoxProfile, loadProfiles } from "./profiles";
  */
 export async function loadProfileStatuses(): Promise<{ profiles: FirefoxProfile[]; statuses: ProfileStatus[] }> {
   const [profiles, running] = await Promise.all([loadProfiles(), findRunningProfiles()]);
-  const hosts = readHosts();
-  let statuses = profileStatuses(
+  const statuses = profileStatuses(
     profiles,
     running,
-    hosts.map((h) => h.profilePath)
+    readHosts().map((h) => h.profilePath)
   );
-  // A host that can't say which profile it serves (one from before
-  // per-profile records, or whose profile lookup failed) is serving one of
-  // the running profiles that have the extension, so don't flag those.
-  if (hosts.some((h) => !h.profilePath)) {
-    statuses = statuses.map((s) => (s.state === "not-connected" ? { ...s, state: "connected" } : s));
-  }
   return { profiles, statuses };
 }

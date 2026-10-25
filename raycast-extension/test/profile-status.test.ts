@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 import {
   EXTENSION_ID,
   type ExtensionState,
+  openInProfile,
   parseRunningProfiles,
   profileStatuses,
   profilesNeedingSetup,
@@ -149,6 +150,22 @@ describe("profileStatuses", () => {
     assert.equal(a.state, "connected");
   });
 
+  test("a host that can't name its profile counts as serving running profiles with the extension", () => {
+    const result = profileStatuses(
+      profiles,
+      new Map([
+        [A, 1],
+        [B, 2],
+      ]),
+      [null],
+      states({ [A]: "installed", [B]: "missing" })
+    );
+    assert.deepEqual(
+      result.map((s) => s.state),
+      ["connected", "needs-install", "not-running"]
+    );
+  });
+
   test("adds running profiles that Firefox's profile lists don't know about", () => {
     const extra = "/tmp/scratch-profile";
     const result = profileStatuses(profiles, new Map([[extra, 9]]), [], states({ [extra]: "missing" }));
@@ -168,5 +185,36 @@ describe("profilesNeedingSetup", () => {
       profilesNeedingSetup(statuses).map((s) => s.state),
       ["needs-install", "disabled", "not-connected"]
     );
+  });
+});
+
+describe("openInProfile", () => {
+  function fakeSpawn() {
+    const calls: unknown[][] = [];
+    let unrefs = 0;
+    const run = ((...args: unknown[]) => {
+      calls.push(args);
+      return { unref: () => unrefs++ };
+    }) as unknown as Parameters<typeof openInProfile>[2];
+    return { run, calls, unrefs: () => unrefs };
+  }
+
+  test("starts Firefox with the profile and URL, detached from Raycast", () => {
+    const { run, calls, unrefs } = fakeSpawn();
+    openInProfile(B, "https://addons.mozilla.org/x/", run);
+    assert.deepEqual(calls, [
+      [
+        "/Applications/Firefox.app/Contents/MacOS/firefox",
+        ["--profile", B, "https://addons.mozilla.org/x/"],
+        { detached: true, stdio: "ignore" },
+      ],
+    ]);
+    assert.equal(unrefs(), 1);
+  });
+
+  test("passes only the profile when there is no URL", () => {
+    const { run, calls } = fakeSpawn();
+    openInProfile(B, undefined, run);
+    assert.deepEqual(calls[0][1], ["--profile", B]);
   });
 });

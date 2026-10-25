@@ -2,6 +2,7 @@ import { accessSync, constants, existsSync, mkdirSync, readFileSync, writeFileSy
 import { homedir } from "os";
 import { dirname, join, resolve } from "path";
 import { environment } from "@raycast/api";
+import { MANIFEST_PATH } from "./manifest";
 
 // -- Firefox detection --
 
@@ -74,29 +75,7 @@ export function generateManifest(runShPath: string): string {
 
 // -- Manifest location --
 
-export const MANIFEST_PATH = join(
-  homedir(),
-  "Library",
-  "Application Support",
-  "Mozilla",
-  "NativeMessagingHosts",
-  "raycast_firefox.json"
-);
-
-/**
- * Whether Firefox can launch the native host: the manifest exists, names
- * `raycast_firefox`, and points at an executable `run.sh`.
- */
-export function isNativeHostRegistered(manifestPath: string = MANIFEST_PATH): boolean {
-  try {
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as { name?: string; path?: string };
-    if (manifest.name !== "raycast_firefox" || !manifest.path) return false;
-    accessSync(manifest.path, constants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { MANIFEST_PATH, isNativeHostRegistered } from "./manifest";
 
 /** Version of the installed native host bundle, or null if it isn't installed. */
 export function installedHostVersion(): string | null {
