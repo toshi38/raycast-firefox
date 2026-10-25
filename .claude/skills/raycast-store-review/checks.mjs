@@ -103,7 +103,11 @@ export function titleCaseProblems(title) {
   });
 }
 
-/** "Setup" is a noun; as a verb in a title it is "Set Up". */
+/**
+ * "Setup" is a noun; as a verb in a title it is "Set up". Raycast's
+ * @raycast/prefer-title-case lint rule keeps "up" lowercase, so "Set Up"
+ * fails `ray lint`.
+ */
 const SETUP_VERB = /^Setup\b/;
 
 export function checkPackageJson(pkg, storePkg) {
@@ -127,7 +131,7 @@ export function checkPackageJson(pkg, storePkg) {
     if (!title) continue;
     const bad = titleCaseProblems(title);
     if (bad.length) out.push(finding("warn", "package", `${what} "${title}" is not Title Case: ${bad.join(", ")}`, file));
-    if (SETUP_VERB.test(title)) out.push(finding("warn", "package", `${what} "${title}": as a verb it is "Set Up" (titles use <verb> <noun>)`, file));
+    if (SETUP_VERB.test(title)) out.push(finding("warn", "package", `${what} "${title}": as a verb it is "Set up" (titles use <verb> <noun>; ray lint keeps "up" lowercase)`, file));
   }
   const commands = pkg.commands ?? [];
   for (const c of commands) {
@@ -208,7 +212,7 @@ export function checkSource(files) {
       out.push(finding("info", "source", "A failure toast in a catch block could use showFailureToast from @raycast/utils", path, lineOf(text, m.index)));
     }
     for (const m of text.matchAll(/title=(?:"|\{`)(Setup\b[^"`]*)/g)) {
-      out.push(finding("warn", "source", `Title "${m[1]}": as a verb it is "Set Up"`, path, lineOf(text, m.index)));
+      out.push(finding("warn", "source", `Title "${m[1]}": as a verb it is "Set up" (ray lint keeps "up" lowercase)`, path, lineOf(text, m.index)));
     }
   }
   return out;
