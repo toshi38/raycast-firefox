@@ -20,6 +20,7 @@ import {
   HOST_TIMEOUT_MS,
   type Host,
   TAB_REFRESH_MS,
+  createStaleGuard,
   fetchFromHosts,
   numberWindows,
   readHosts,
@@ -355,14 +356,21 @@ const ERROR_ICONS: Record<FailureMode, Icon> = {
 export default function SearchTabs() {
   const [classifiedError, setClassifiedError] = useState<ClassifiedError | null>(null);
 
+  // Tabs from the background refresh, shown until the next full load.
+  const [refreshed, setRefreshed] = useState<HostTab[] | null>(null);
+  // Full loads and tab actions invalidate background refreshes still in flight.
+  const staleGuard = useRef(createStaleGuard()).current;
+
+  // A failed full load empties the list, so the error view (with Launch
+  // Firefox) shows instead of the last tabs, e.g. after Firefox quits.
   const handleError = useCallback(async (error: Error) => {
+    staleGuard.invalidate();
+    setRefreshed([]);
     setClassifiedError(await classifyError(error));
   }, []);
 
-  // Tabs from the background refresh, shown until the next full load.
-  const [refreshed, setRefreshed] = useState<HostTab[] | null>(null);
-
   const handleData = useCallback(() => {
+    staleGuard.invalidate();
     setClassifiedError(null);
     setRefreshed(null);
   }, []);
@@ -386,7 +394,11 @@ export default function SearchTabs() {
       onData: handleData,
     }
   );
-  useHostsWatcher(revalidate);
+  const reload = useCallback(() => {
+    staleGuard.invalidate();
+    revalidate();
+  }, [revalidate]);
+  useHostsWatcher(reload);
   const tabs = refreshed ?? loadedTabs;
 
   // Raycast keeps this command open between uses, so re-read tabs while it
@@ -399,10 +411,22 @@ export default function SearchTabs() {
   useEffect(() => {
     let inFlight = false;
     const timer = setInterval(async () => {
-      if (inFlight || readHosts().length === 0) return;
+      if (inFlight) return;
+      if (readHosts().length === 0) {
+        // Every host is gone (Firefox quit): clear the list once and let a
+        // full load show why, in case the hosts watcher missed it.
+        if (shownRef.current.length > 0) {
+          staleGuard.invalidate();
+          setRefreshed([]);
+          revalidate();
+        }
+        return;
+      }
       inFlight = true;
+      const isCurrent = staleGuard.begin();
       try {
         const fresh = await fetchTabsFromAllHosts();
+        if (!isCurrent()) return;
         if (tabsChanged(shownRef.current, fresh)) setRefreshed(fresh);
         setClassifiedError(null);
       } catch {
@@ -428,7 +452,7 @@ export default function SearchTabs() {
   // Retry re-checks profiles as well: closing a profile that had no host
   // doesn't change the tabs, so the tab-driven re-check wouldn't notice it.
   const retry = () => {
-    revalidate();
+    reload();
     recheckSetup();
   };
   const errorMode = classifiedError?.mode;
@@ -548,7 +572,7 @@ export default function SearchTabs() {
                   icon={Icon.Globe}
                   onAction={() => {
                     execFile("open", ["-a", "Firefox"]);
-                    setTimeout(revalidate, 2000);
+                    setTimeout(reload, 2000);
                   }}
                 />
               )}
@@ -612,6 +636,7 @@ export default function SearchTabs() {
                     style={Action.Style.Destructive}
                     shortcut={Keyboard.Shortcut.Common.Remove}
                     onAction={() => {
+                      staleGuard.invalidate();
                       setRefreshed((shown) => shown && shown.filter((t) => tabKey(t) !== tabKey(tab)));
                       closeTab(tab, mutate);
                     }}
