@@ -2,8 +2,8 @@
 
 const http = require('http');
 const { URL } = require('url');
-const { execFile } = require('child_process');
 const { logger } = require('./logger');
+const { activateFirefox } = require('./activate');
 const { sendRequest } = require('./bridge');
 const { writePortFile } = require('./lifecycle');
 const { handleHealth } = require('./health');
@@ -168,23 +168,10 @@ async function handleSwitchTab(req, res) {
       windowId: body.windowId,
     });
 
-    // Raise Firefox to foreground on macOS — only the focused window, not all windows.
-    // NSApplicationActivateIgnoringOtherApps (2) without NSApplicationActivateAllWindows (1)
-    // brings only the key/main window forward, matching alt-tab behavior.
-    // Each Firefox profile runs as its own process under the same bundle ID, so
-    // target the Firefox process that launched this host (our parent) rather than
-    // whichever one the bundle ID lookup happens to list first.
+    // Raise this host's Firefox to the foreground on macOS, only its focused window.
     if (process.platform === 'darwin') {
-      execFile('osascript', ['-l', 'JavaScript', '-e', `
-        ObjC.import("AppKit");
-        var app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(${process.ppid});
-        if (app.isNil()) {
-          var apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier("org.mozilla.firefox");
-          if (apps.count > 0) app = apps.objectAtIndex(0);
-        }
-        if (!app.isNil()) app.activateWithOptions(2);
-      `], (err) => {
-        if (err) logger.warn({ err: err.message }, 'Failed to activate Firefox window');
+      activateFirefox(process.ppid, {
+        onError: (err) => logger.warn({ err: err.message }, 'Failed to activate Firefox window'),
       });
     }
 

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node host.js",
     "start:pretty": "node host.js 2>&1 | pino-pretty",
-    "build": "node esbuild.config.js"
+    "build": "node esbuild.config.js",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
     "pino": "^9"
