@@ -145,3 +145,43 @@ export function numberWindows(tabs: HostScoped[], profileOrder: (hostKey: string
   );
   return new Map(windows.map((t, i) => [windowKey(t), i + 1]));
 }
+
+/** How often Search Firefox Tabs re-reads tabs while it is open. */
+export const TAB_REFRESH_MS = 2000;
+
+/** The tab fields the list shows or sorts by. */
+interface ShownTab extends HostScoped {
+  title?: string;
+  url?: string;
+  active?: boolean;
+  pinned?: boolean;
+  status?: string;
+  favIconUrl?: string | null;
+  lastAccessed?: number;
+  container?: { name: string } | null;
+}
+
+function tabSignature(t: ShownTab): string {
+  return JSON.stringify([
+    tabKey(t),
+    t.windowId,
+    t.title,
+    t.url,
+    t.active,
+    t.pinned,
+    t.status,
+    t.favIconUrl,
+    t.lastAccessed,
+    t.container?.name ?? null,
+  ]);
+}
+
+/**
+ * Whether a refreshed tab list differs from the shown one in anything the
+ * list displays or sorts by. Raycast re-serializes the whole list on every
+ * render, so an unchanged refresh must not re-render.
+ */
+export function tabsChanged(shown: ShownTab[], fresh: ShownTab[]): boolean {
+  if (shown.length !== fresh.length) return true;
+  return shown.some((t, i) => tabSignature(t) !== tabSignature(fresh[i]));
+}

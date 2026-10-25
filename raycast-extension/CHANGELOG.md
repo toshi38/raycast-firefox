@@ -21,6 +21,7 @@
 - Show tabs from every running Firefox profile, not just one
 - Switch to and close tabs in the profile they belong to
 - Leave out a profile that stops responding instead of waiting for it
+- Keep the list up to date while Search Firefox Tabs stays open, so tabs opened, closed or navigated in Firefox show up
 - Show each profile's avatar and color on its window tags, and filter tabs by profile from the search bar
 
 ## [Fix Typing Lag With Many Tabs] - 2026-10-24
