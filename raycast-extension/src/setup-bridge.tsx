@@ -1,73 +1,20 @@
 import { Action, ActionPanel, Color, Icon, List, Toast, showToast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useCallback, useEffect, useState } from "react";
-import { installNativeHost } from "./lib/installer";
+import { PINNED_HOST_VERSION, installAndRegister, isHostOutdated, updateOutdatedHost } from "./lib/host-update";
 import { profilesNeedingSetup } from "./lib/profile-status";
 import { ProfileSetupItem, SetupAction } from "./lib/profile-ui";
-import {
-  generateManifest,
-  installedHostVersion,
-  isFirefoxInstalled,
-  isNativeHostRegistered,
-  resolveNativeHostPath,
-  validateManifest,
-  writeManifest,
-} from "./lib/setup";
+import { installedHostVersion, isFirefoxInstalled, isNativeHostRegistered } from "./lib/setup";
 import { loadProfileStatuses } from "./lib/setup-status";
 import { useHostsWatcher } from "./lib/use-hosts-watcher";
 
-/**
- * Download the native host, register it with Firefox and validate the
- * registration. Reports progress and failures in `toast`. Returns whether
- * the host is now registered.
- */
-async function installAndRegister(toast: Toast): Promise<boolean> {
-  try {
-    await installNativeHost((message) => {
-      toast.message = message;
-    });
-  } catch (err) {
-    toast.style = Toast.Style.Failure;
-    toast.title = "Installation Failed";
-    toast.message = err instanceof Error ? err.message : String(err);
-    return false;
-  }
-
-  let runShPath: string;
-  try {
-    runShPath = resolveNativeHostPath();
-  } catch (err) {
-    toast.style = Toast.Style.Failure;
-    toast.title = "Setup Failed";
-    toast.message = err instanceof Error ? err.message : String(err);
-    return false;
-  }
-
-  let manifestPath: string;
-  try {
-    manifestPath = writeManifest(generateManifest(runShPath));
-  } catch {
-    toast.style = Toast.Style.Failure;
-    toast.title = "Couldn't Write Manifest";
-    toast.message = "Check permissions on ~/Library/Application Support/Mozilla/";
-    return false;
-  }
-
-  const validation = validateManifest(manifestPath, runShPath);
-  if (!validation.valid) {
-    toast.style = Toast.Style.Failure;
-    toast.title = "Manifest Validation Failed";
-    toast.message = validation.error ?? "Unknown validation error";
-    return false;
-  }
-  return true;
-}
-
 export default function SetupBridge() {
-  const [host, setHost] = useState(() => ({
+  const readHost = () => ({
     registered: isNativeHostRegistered(),
     version: installedHostVersion(),
-  }));
+    outdated: isHostOutdated(),
+  });
+  const [host, setHost] = useState(readHost);
   const [installing, setInstalling] = useState(false);
   const firefoxInstalled = isFirefoxInstalled();
 
@@ -82,7 +29,7 @@ export default function SetupBridge() {
       message: "Downloading native host...",
     });
     const ok = await installAndRegister(toast);
-    setHost({ registered: isNativeHostRegistered(), version: installedHostVersion() });
+    setHost(readHost());
     setInstalling(false);
     if (!ok) return;
 
@@ -97,10 +44,21 @@ export default function SetupBridge() {
         : "Restart Firefox if your tabs don't appear";
   }, [revalidate]);
 
+  const update = useCallback(async () => {
+    setInstalling(true);
+    await updateOutdatedHost();
+    setHost(readHost());
+    setInstalling(false);
+    revalidate();
+  }, [revalidate]);
+
   // Setting up is what this command is for, so install straight away when
-  // Firefox can't launch the native host yet.
+  // Firefox can't launch the native host yet, and update it when it is older
+  // than the release this extension pins.
   useEffect(() => {
-    if (firefoxInstalled && !host.registered) install();
+    if (!firefoxInstalled) return;
+    if (!host.registered) install();
+    else if (host.outdated) update();
   }, []);
 
   if (!firefoxInstalled) {
@@ -126,12 +84,14 @@ export default function SetupBridge() {
       icon={Icon.ArrowClockwise}
       shortcut={{ modifiers: ["cmd"], key: "r" }}
       onAction={() => {
-        setHost({ registered: isNativeHostRegistered(), version: installedHostVersion() });
+        setHost(readHost());
         revalidate();
       }}
     />
   );
-  const installAction = (
+  const installAction = host.outdated ? (
+    <Action title={`Update Native Host to ${PINNED_HOST_VERSION}`} icon={Icon.Download} onAction={update} />
+  ) : (
     <Action
       title={host.registered ? "Reinstall Native Host" : "Install Native Host"}
       icon={Icon.Download}
@@ -151,9 +111,13 @@ export default function SetupBridge() {
               : "Not installed"
           }
           accessories={[
-            host.registered
-              ? { tag: { value: "Installed", color: Color.Green } }
-              : { tag: { value: installing ? "Installing" : "Missing", color: Color.Orange } },
+            installing
+              ? { tag: { value: "Installing", color: Color.Orange } }
+              : !host.registered
+              ? { tag: { value: "Missing", color: Color.Orange } }
+              : host.outdated
+              ? { tag: { value: `Update to ${PINNED_HOST_VERSION}`, color: Color.Orange } }
+              : { tag: { value: "Installed", color: Color.Green } },
           ]}
           actions={
             <ActionPanel>

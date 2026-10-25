@@ -22,6 +22,7 @@ import { ProfileSetupItem, SetupAction, openSetupCommand, profileColor, profileI
 import { type ProfileLabel, labelHosts } from "./lib/profiles";
 import { loadProfileStatuses } from "./lib/setup-status";
 import { useHostsWatcher } from "./lib/use-hosts-watcher";
+import { updateOutdatedHost } from "./lib/host-update";
 
 // -- Types matching the native host HTTP API response --
 
@@ -370,6 +371,13 @@ export default function SearchTabs() {
     }
   );
   useHostsWatcher(revalidate);
+
+  // Bring an installed native host up to the pinned release. The update
+  // restarts the running hosts, and the watcher refreshes the list when they
+  // re-register.
+  useEffect(() => {
+    updateOutdatedHost();
+  }, []);
 
   // Re-check every profile's setup whenever the set of connected hosts or
   // the error changes, e.g. after the extension is installed in a profile.

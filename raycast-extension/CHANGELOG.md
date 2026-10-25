@@ -1,5 +1,10 @@
 # Firefox Tabs Changelog
 
+## [Automatic Native Host Updates] - {PR_MERGE_DATE}
+
+- Install a pinned native host release and check it against hashes shipped with the extension
+- Update an older native host automatically when Search Firefox Tabs or Setup Firefox Bridge opens, then reconnect each Firefox profile to it
+
 ## [Profile Setup] - {PR_MERGE_DATE}
 
 - Search Firefox Tabs lists running profiles that are missing the companion extension, with an action to install it in that profile
