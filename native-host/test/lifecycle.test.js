@@ -40,6 +40,10 @@ function fakeKill({ alive = [], exitOn = {} } = {}) {
   return { kill, signals, live };
 }
 
+// Every PID counts as alive unless a test passes its own fakeKill, so tests
+// never depend on the real process table.
+const allAlive = () => true;
+
 function lifecycleFor(firefoxPid, pid, extra = {}) {
   return createLifecycle({
     configDir: dir,
@@ -48,6 +52,7 @@ function lifecycleFor(firefoxPid, pid, extra = {}) {
     version: '9.9.9',
     logger: silentLogger,
     killGraceMs: 0,
+    kill: allAlive,
     ...extra,
   });
 }
@@ -96,6 +101,48 @@ describe('register and publishPort', () => {
     b.publishPort(26395);
     assert.equal(readJSON(recordPath(500)).port, 26394);
     assert.equal(readJSON(recordPath(600)).port, 26395);
+  });
+});
+
+describe('stale records', () => {
+  test('register removes records left by hosts that died without cleaning up', () => {
+    lifecycleFor(500, 1500).register();
+    lifecycleFor(600, 1600).register();
+    const { kill } = fakeKill({ alive: [1600, 1700] });
+
+    lifecycleFor(700, 1700, { kill }).register();
+
+    assert.equal(fs.existsSync(recordPath(500)), false, 'dead host record removed');
+    assert.equal(fs.existsSync(recordPath(600)), true, 'live host record kept');
+    assert.equal(fs.existsSync(recordPath(700)), true);
+  });
+
+  test('register leaves unreadable records alone', () => {
+    fs.mkdirSync(path.join(dir, 'hosts'));
+    fs.writeFileSync(recordPath(500), '{not json');
+    const { kill } = fakeKill({ alive: [1700] });
+
+    lifecycleFor(700, 1700, { kill }).register();
+
+    assert.equal(fs.readFileSync(recordPath(500), 'utf-8'), '{not json');
+  });
+
+  test('publishPort removes another record still claiming the same port', () => {
+    // A host that was SIGKILLed whose PID has since been reused looks alive.
+    const stale = lifecycleFor(500, 1500);
+    stale.register();
+    stale.publishPort(26395);
+    const other = lifecycleFor(600, 1600);
+    other.register();
+    other.publishPort(26394);
+
+    const fresh = lifecycleFor(700, 1700);
+    fresh.register();
+    fresh.publishPort(26395);
+
+    assert.equal(fs.existsSync(recordPath(500)), false, 'stale claim on 26395 removed');
+    assert.equal(readJSON(recordPath(600)).port, 26394, 'other port untouched');
+    assert.equal(readJSON(recordPath(700)).port, 26395);
   });
 });
 

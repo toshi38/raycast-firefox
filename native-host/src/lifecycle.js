@@ -90,18 +90,33 @@ function createLifecycle({
     registered = true;
   }
 
+  /** Every readable record other than this host's own, as { file, record }. */
+  function otherRecords() {
+    let names = [];
+    try { names = fs.readdirSync(hostsDir).filter((n) => n.endsWith('.json')); } catch (_) { return []; }
+    const others = [];
+    for (const name of names) {
+      const file = path.join(hostsDir, name);
+      if (file === recordFile) continue;
+      try {
+        others.push({ file, record: JSON.parse(fs.readFileSync(file, 'utf-8')) });
+      } catch (_) { /* skip unreadable record */ }
+    }
+    return others;
+  }
+
+  /** Remove `file` unless it has changed since it was read as `record`. */
+  function removeStale(file, record) {
+    removeIfOwned(file, (s) => {
+      try { return JSON.parse(s).pid === record.pid; } catch (_) { return false; }
+    });
+  }
+
   /** Port of another serving host, or null. Only used while the shared port file is absent. */
   function otherLiveHostPort() {
     if (fs.existsSync(legacyPortFile)) return null;
-    let names = [];
-    try { names = fs.readdirSync(hostsDir).filter((n) => n.endsWith('.json')); } catch (_) { return null; }
-    for (const name of names) {
-      try {
-        const other = JSON.parse(fs.readFileSync(path.join(hostsDir, name), 'utf-8'));
-        if (other.pid !== pid && Number.isInteger(other.port) && isAlive(other.pid)) return other.port;
-      } catch (_) { /* skip unreadable record */ }
-    }
-    return null;
+    const live = otherRecords().find(({ record: r }) => Number.isInteger(r.port) && isAlive(r.pid));
+    return live ? live.record.port : null;
   }
 
   function removeIfOwned(file, isOwned) {
@@ -129,15 +144,28 @@ function createLifecycle({
       await Promise.all(targets.map(terminate));
     },
 
-    /** Write this host's record before the HTTP server has a port. */
+    /**
+     * Write this host's record before the HTTP server has a port, and remove
+     * records left by hosts that died without cleaning up (for example after
+     * SIGKILL), so a reused PID can't make one look alive again.
+     */
     register() {
+      for (const { file, record: other } of otherRecords()) {
+        if (!Number.isInteger(other.pid) || !isAlive(other.pid)) removeStale(file, other);
+      }
       writeRecord();
       logger.info({ recordFile, firefoxPid }, 'Host registered');
     },
 
-    /** Record the HTTP server port once it is listening. */
+    /**
+     * Record the HTTP server port once it is listening. This host now owns the
+     * port, so any other record still claiming it is stale.
+     */
     publishPort(port) {
       record.port = port;
+      for (const { file, record: other } of otherRecords()) {
+        if (other.port === port) removeStale(file, other);
+      }
       writeRecord();
       writeAtomic(legacyPortFile, String(port));
       logger.info({ port }, 'Port published');
