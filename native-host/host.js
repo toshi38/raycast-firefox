@@ -11,9 +11,19 @@ console.warn = (...args) => logger.warn({ console: true }, args.join(' '));
 
 const { createDecoder, encode } = require('./src/protocol');
 const { version } = require('./package.json');
-const lifecycle = require('./src/lifecycle');
+const { createLifecycle } = require('./src/lifecycle');
+const { detectProfilePath } = require('./src/profile');
 const bridge = require('./src/bridge');
 const { ensureServer } = require('./src/server');
+
+// The host is launched by (and exec'd from run.sh under) the Firefox process
+// whose extension connected to it, one per running profile.
+const lifecycle = createLifecycle({
+  pid: process.pid,
+  firefoxPid: process.ppid,
+  version,
+  logger,
+});
 
 // -- Native messaging output --
 
@@ -33,7 +43,7 @@ function sendNativeMessage(msg) {
 
 // -- Startup --
 
-logger.info({ version, pid: process.pid, logDir: getLogDir() }, 'Native messaging host starting');
+logger.info({ version, pid: process.pid, firefoxPid: process.ppid, logDir: getLogDir() }, 'Native messaging host starting');
 
 // Wire bridge to use our sendNativeMessage function
 bridge.setSendNativeMessage(sendNativeMessage);
@@ -53,18 +63,18 @@ const decoder = createDecoder(onMessage, logger);
 
 process.stdin.on('data', decoder);
 
+// Firefox never reconnects to an existing host (the extension launches a new
+// one), so a host without its native connection has nothing left to do.
 process.stdin.on('end', () => {
   bridge.setNativeConnected(false);
-  lifecycle.cleanupPortFile();
-  logger.info('Firefox disconnected (stdin EOF), removed port file');
-  // Host stays alive but port file removal signals Raycast immediately
+  logger.info('Firefox disconnected (stdin EOF), shutting down');
+  process.exit(0);
 });
 
 process.stdin.on('error', (err) => {
   bridge.setNativeConnected(false);
-  lifecycle.cleanupPortFile();
-  logger.error({ err: err.message }, 'Native messaging stdin error, removed port file');
-  // Host stays alive but port file removal signals Raycast immediately
+  logger.error({ err: err.message }, 'Native messaging stdin error, shutting down');
+  process.exit(1);
 });
 
 // -- Message handling --
@@ -76,7 +86,9 @@ function onMessage(msg) {
   if (!serverStarted) {
     serverStarted = true;
     logger.info('First native message received, starting HTTP server');
-    ensureServer().catch((err) => {
+    ensureServer().then(({ port }) => {
+      lifecycle.publishPort(port);
+    }).catch((err) => {
       logger.error({ err: err.message }, 'Failed to start HTTP server');
     });
   }
@@ -88,12 +100,17 @@ function onMessage(msg) {
 
 (async () => {
   try {
-    await lifecycle.killOldProcess();
+    await lifecycle.killPreviousHosts();
   } catch (err) {
-    logger.error({ err: err.message }, 'Error killing old process');
+    logger.error({ err: err.message }, 'Error killing previous host');
   }
 
-  lifecycle.writePidFile();
+  lifecycle.register();
+
+  detectProfilePath(process.ppid).then((profilePath) => {
+    logger.info({ profilePath }, 'Firefox profile detected');
+    lifecycle.setProfilePath(profilePath);
+  });
 
   // Send version handshake to WebExtension
   bridge.sendVersionHandshake();
@@ -105,21 +122,16 @@ function onMessage(msg) {
 
 process.on('SIGTERM', () => {
   logger.info('Received SIGTERM, shutting down');
-  lifecycle.cleanupPidFile();
-  lifecycle.cleanupPortFile();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   logger.info('Received SIGINT, shutting down');
-  lifecycle.cleanupPidFile();
-  lifecycle.cleanupPortFile();
   process.exit(0);
 });
 
 process.on('exit', () => {
-  lifecycle.cleanupPidFile();
-  lifecycle.cleanupPortFile();
+  lifecycle.cleanup();
 });
 
 process.on('uncaughtException', (err) => {

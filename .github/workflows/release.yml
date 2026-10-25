@@ -120,6 +120,16 @@ jobs:
           echo "Native host: ${{ steps.pre.outputs.native_host }} -> $NH_NEW (changed=$NH_CHANGED)"
           echo "Extension: ${{ steps.pre.outputs.extension }} -> $EXT_NEW (changed=$EXT_CHANGED)"
 
+      # Build before committing so the pin below hashes the exact bundle that
+      # is released, including the bumped version it embeds.
+      - name: Build native host bundle
+        if: steps.check.outputs.has_changesets == 'true'
+        run: npm run build --workspace=native-host
+
+      - name: Pin native host for the Raycast extension
+        if: steps.changed.outputs.native_host == 'true'
+        run: node native-host/scripts/pin-for-raycast.js
+
       - name: Commit version bumps
         if: steps.check.outputs.has_changesets == 'true'
         run: |
@@ -154,10 +164,6 @@ jobs:
       - name: Push version commit and tags
         if: steps.check.outputs.has_changesets == 'true'
         run: git push origin main --follow-tags
-
-      - name: Build native host bundle
-        if: steps.check.outputs.has_changesets == 'true'
-        run: npm run build --workspace=native-host
 
       - name: Build Firefox extension zip
         if: steps.check.outputs.has_changesets == 'true'

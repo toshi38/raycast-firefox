@@ -19,6 +19,7 @@ function handleHealth(currentPort) {
       port: currentPort,
       version,
       pid: process.pid,
+      firefoxPid: process.ppid,
       memoryMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
     },
     meta: {
