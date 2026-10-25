@@ -9,7 +9,8 @@
  *   when something shown changed, because Raycast re-serializes the whole
  *   list on every render.
  * - A tab being closed is hidden at once and stays hidden from refreshes
- *   until its close settles; a failed close brings it back.
+ *   until its close settles; a failed close brings it back. A full load
+ *   that started before a close succeeded doesn't bring the tab back.
  */
 
 /** The fields the store needs from a tab. */
@@ -27,10 +28,12 @@ export interface TabState<T extends StoreTab> {
   version: number;
   /** Consecutive background refreshes in which every host failed. */
   failedRefreshes: number;
+  /** Tabs closed successfully, with the version at which each close settled. */
+  closed: Array<{ key: string; version: number }>;
 }
 
 export type TabAction<T extends StoreTab> =
-  | { type: "loaded"; tabs: T[] }
+  | { type: "loaded"; tabs: T[]; startedAt: number }
   | { type: "loadFailed"; error: unknown }
   | { type: "refreshed"; tabs: T[]; startedAt: number }
   | { type: "refreshFailed"; startedAt: number }
@@ -46,7 +49,7 @@ export const MAX_FAILED_REFRESHES = 3;
 export const storeTabKey = (tab: StoreTab) => `${tab.host.key}:${tab.id}`;
 
 export function initialTabState<T extends StoreTab>(): TabState<T> {
-  return { tabs: [], error: null, closing: [], version: 0, failedRefreshes: 0 };
+  return { tabs: [], error: null, closing: [], version: 0, failedRefreshes: 0, closed: [] };
 }
 
 export function tabReducer<T extends StoreTab>(
@@ -55,8 +58,18 @@ export function tabReducer<T extends StoreTab>(
   changed: (shown: T[], fresh: T[]) => boolean
 ): TabState<T> {
   switch (action.type) {
-    case "loaded":
-      return { ...state, tabs: action.tabs, error: null, version: state.version + 1, failedRefreshes: 0 };
+    case "loaded": {
+      // Tabs closed after this load started may still be in its result.
+      const closedSince = new Set(state.closed.filter((c) => c.version > action.startedAt).map((c) => c.key));
+      return {
+        ...state,
+        tabs: closedSince.size ? action.tabs.filter((t) => !closedSince.has(storeTabKey(t))) : action.tabs,
+        error: null,
+        version: state.version + 1,
+        failedRefreshes: 0,
+        closed: state.closed.filter((c) => c.version > action.startedAt),
+      };
+    }
     case "loadFailed":
       // Empty the list so the error view, not the last tabs, is shown.
       return { ...state, tabs: [], error: action.error, version: state.version + 1, failedRefreshes: 0 };
@@ -78,6 +91,7 @@ export function tabReducer<T extends StoreTab>(
         closing: state.closing.filter((k) => k !== action.key),
         tabs: action.ok ? state.tabs.filter((t) => storeTabKey(t) !== action.key) : state.tabs,
         version: state.version + 1,
+        closed: action.ok ? [...state.closed, { key: action.key, version: state.version + 1 }] : state.closed,
       };
   }
 }
@@ -89,9 +103,13 @@ export function visibleTabs<T extends StoreTab>(state: TabState<T>): T[] {
   return state.tabs.filter((t) => !closing.has(storeTabKey(t)));
 }
 
-/** Whether background refreshes have failed often enough to warrant a full load. */
+/**
+ * Whether background refreshes have failed often enough, while tabs are
+ * shown, to warrant a full load that shows the error. While an error is
+ * already shown, a refresh that works clears it, so no reload is needed.
+ */
 export function needsFullLoad<T extends StoreTab>(state: TabState<T>): boolean {
-  return state.failedRefreshes >= MAX_FAILED_REFRESHES;
+  return state.error === null && state.failedRefreshes >= MAX_FAILED_REFRESHES;
 }
 
 /**

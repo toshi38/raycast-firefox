@@ -21,16 +21,27 @@ export default function SetupBridge() {
     outdated: isHostOutdated(),
   });
   const [host, setHost] = useState(readHost);
+  // Only re-render when the host's state actually changed.
+  const refreshHost = useCallback(() => {
+    const next = readHost();
+    setHost((previous) => (JSON.stringify(previous) === JSON.stringify(next) ? previous : next));
+  }, []);
   const [installing, setInstalling] = useState(false);
-  const firefoxInstalled = isFirefoxInstalled();
+  const [firefoxInstalled] = useState(isFirefoxInstalled);
 
   const { data: setup, isLoading, revalidate } = usePromise(loadProfileStatuses, []);
   // A host starting or stopping can mean another command just updated it.
   const onHostsChanged = useCallback(() => {
-    setHost(readHost());
+    refreshHost();
     revalidate();
   }, [revalidate]);
   useHostsWatcher(onHostsChanged);
+  // Another command can finish an update without any host restarting, so
+  // re-read the host's state now and then too.
+  useEffect(() => {
+    const timer = setInterval(refreshHost, 3000);
+    return () => clearInterval(timer);
+  }, [refreshHost]);
 
   const install = useCallback(async () => {
     setInstalling(true);
@@ -39,9 +50,17 @@ export default function SetupBridge() {
       title: "Installing Firefox Bridge",
       message: "Downloading native host...",
     });
-    const ok = await runLocked(() => installAndRegister(toast));
-    setHost(readHost());
-    setInstalling(false);
+    let ok: boolean | undefined = false;
+    try {
+      ok = await runLocked(() => installAndRegister(toast));
+    } catch (error) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Installation Failed";
+      toast.message = error instanceof Error ? error.message : String(error);
+    } finally {
+      refreshHost();
+      setInstalling(false);
+    }
     if (ok === undefined) {
       toast.style = Toast.Style.Success;
       toast.title = "Firefox Bridge Is Being Updated";
@@ -63,10 +82,20 @@ export default function SetupBridge() {
 
   const update = useCallback(async () => {
     setInstalling(true);
-    await updateOutdatedHost();
-    setHost(readHost());
-    setInstalling(false);
-    revalidate();
+    try {
+      const outcome = await updateOutdatedHost();
+      if (outcome === "busy") {
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Firefox Bridge Is Being Updated",
+          message: "Another command is updating the native host",
+        });
+      }
+    } finally {
+      refreshHost();
+      setInstalling(false);
+      revalidate();
+    }
   }, [revalidate]);
 
   // Setting up is what this command is for, so install straight away when
@@ -84,7 +113,7 @@ export default function SetupBridge() {
         <List.EmptyView
           icon={Icon.Globe}
           title="Firefox Not Detected"
-          description="Install Firefox in /Applications, then run this command again."
+          description="Install Firefox, then run this command again."
         />
       </List>
     );
@@ -101,7 +130,7 @@ export default function SetupBridge() {
       icon={Icon.ArrowClockwise}
       shortcut={{ modifiers: ["cmd"], key: "r" }}
       onAction={() => {
-        setHost(readHost());
+        refreshHost();
         revalidate();
       }}
     />

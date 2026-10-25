@@ -73,7 +73,7 @@ export async function installAndRegister(toast: Toast): Promise<boolean> {
   return true;
 }
 
-let updating: Promise<boolean> | null = null;
+let updating: Promise<UpdateOutcome> | null = null;
 
 function reportRestart(toast: Toast, stopped: number) {
   toast.style = Toast.Style.Success;
@@ -108,10 +108,12 @@ export async function runLocked<T>(fn: () => Promise<T>): Promise<T | undefined>
  * host.pid or record never makes it look as if something needs doing. Shows
  * a toast only when it changes something. `force` reinstalls even when the
  * installed version matches, for Try Again after a failed update. Resolves
- * true if it installed or restarted anything. Runs in this command are
- * shared, and the lock keeps other commands out.
+ * with what happened; "busy" means another command holds the lock and is
+ * doing it. Runs in this command are shared.
  */
-export function updateOutdatedHost({ force = false } = {}): Promise<boolean> {
+export type UpdateOutcome = "updated" | "unchanged" | "failed" | "busy";
+
+export function updateOutdatedHost({ force = false } = {}): Promise<UpdateOutcome> {
   const installed = installedHostVersion();
   if (installed) {
     try {
@@ -122,7 +124,7 @@ export function updateOutdatedHost({ force = false } = {}): Promise<boolean> {
   }
   const restartable = restartableHostPids(outdatedHostPids(CONFIG_DIR, PINNED_HOST_VERSION));
   const plan = force ? "install" : planHostUpdate(installed, PINNED_HOST_VERSION, restartable);
-  if (plan === "none") return Promise.resolve(false);
+  if (plan === "none") return Promise.resolve("unchanged");
 
   updating ??= runLocked(async () => {
     const toast = await showToast({
@@ -137,19 +139,19 @@ export function updateOutdatedHost({ force = false } = {}): Promise<boolean> {
       const ok = await installAndRegister(toast);
       if (!ok) {
         toast.primaryAction = { title: "Try Again", onAction: () => void updateOutdatedHost({ force: true }) };
-        return false;
+        return "failed" as const;
       }
     }
     const stopped = restartOutdatedHosts(CONFIG_DIR, PINNED_HOST_VERSION);
     if (plan === "restart" && stopped === 0) {
       // The hosts exited on their own in the meantime: nothing to report.
       await toast.hide();
-      return false;
+      return "unchanged" as const;
     }
     reportRestart(toast, stopped);
-    return true;
+    return "updated" as const;
   })
-    .then((done) => done ?? false)
+    .then((outcome) => outcome ?? "busy")
     .finally(() => {
       updating = null;
     });

@@ -13,9 +13,13 @@ import { MANIFEST_PATH } from "./manifest";
  */
 export function isFirefoxInstalled(): boolean {
   if (existsSync("/Applications/Firefox.app")) return true;
-  // Anywhere else (e.g. ~/Applications): ask Launch Services.
-  return spawnSync("/usr/bin/open", ["-Ra", "Firefox"], { stdio: "ignore" }).status === 0;
+  // A running Firefox of any edition, wherever it is installed.
+  if (spawnSync("pgrep", ["-x", "firefox"], { stdio: "ignore" }).status === 0) return true;
+  // Otherwise ask Launch Services, which finds apps outside /Applications.
+  return FIREFOX_APP_NAMES.some((name) => spawnSync("/usr/bin/open", ["-Ra", name], { stdio: "ignore" }).status === 0);
 }
+
+const FIREFOX_APP_NAMES = ["Firefox", "Firefox Developer Edition", "Firefox Nightly"];
 
 // -- Path resolution --
 

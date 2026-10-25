@@ -59,7 +59,7 @@ export async function openSetupCommand() {
 
 async function openAndConfirm(status: ProfileStatus, url: string | undefined, what: string) {
   try {
-    const executable = firefoxExecutableFor(status.firefoxPid, runningFirefoxPids());
+    const executable = firefoxExecutableFor(status.firefoxPid, status.profile.path, runningFirefoxPids());
     await openInProfile(status.profile.path, url, executable);
     await showToast({ style: Toast.Style.Success, title: what, message: status.profile.name });
   } catch (error) {

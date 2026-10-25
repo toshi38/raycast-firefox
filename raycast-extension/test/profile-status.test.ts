@@ -5,6 +5,7 @@ import {
   type ExtensionState,
   firefoxExecutableFor,
   isFirefoxExecutable,
+  lastFirefoxExecutable,
   openInProfile,
   parseRunningProfiles,
   profileStatuses,
@@ -212,33 +213,74 @@ describe("isFirefoxExecutable", () => {
   });
 });
 
+describe("lastFirefoxExecutable", () => {
+  test("reads the Firefox a profile last ran with from compatibility.ini", () => {
+    const ini =
+      "[Compatibility]\nLastVersion=158.0.1\nLastPlatformDir=/Applications/Firefox Nightly.app/Contents/Resources\nLastAppDir=/x\n";
+    assert.equal(
+      lastFirefoxExecutable(A, () => ini),
+      "/Applications/Firefox Nightly.app/Contents/MacOS/firefox"
+    );
+  });
+
+  test("returns null without compatibility.ini or a usable LastPlatformDir", () => {
+    assert.equal(
+      lastFirefoxExecutable(A, () => {
+        throw new Error("ENOENT");
+      }),
+      null
+    );
+    assert.equal(
+      lastFirefoxExecutable(A, () => "[Compatibility]\nLastPlatformDir=/usr/lib/firefox\n"),
+      null
+    );
+  });
+});
+
 describe("firefoxExecutableFor", () => {
   const nightly = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox";
   const regular = "/Applications/Firefox.app/Contents/MacOS/firefox";
+  const none = () => null;
 
   test("uses the executable the profile is running from", () => {
-    const exe = firefoxExecutableFor(78957, [99313], {
+    const exe = firefoxExecutableFor(78957, A, [99313], {
       executable: (pid) => (pid === 78957 ? nightly : regular),
       exists: () => false,
+      lastUsed: none,
     });
     assert.equal(exe, nightly);
   });
 
-  test("for a profile that isn't running, uses the one another running profile uses", () => {
-    const exe = firefoxExecutableFor(null, [99313], { executable: () => nightly, exists: () => false });
-    assert.equal(exe, nightly);
+  test("for a profile that isn't running, uses the Firefox it last ran with", () => {
+    const exe = firefoxExecutableFor(null, A, [99313], {
+      executable: () => nightly,
+      exists: () => true,
+      lastUsed: () => regular,
+    });
+    assert.equal(exe, regular);
   });
 
-  test("falls back to a standard install when no Firefox is running", () => {
-    const exe = firefoxExecutableFor(null, [], {
-      exists: (p) => p === "/home/Applications/Firefox.app/Contents/MacOS/firefox",
-      defaults: [regular, "/home/Applications/Firefox.app/Contents/MacOS/firefox"],
+  test("prefers a standard install over another running profile's Firefox, so a release profile isn't opened in Nightly", () => {
+    const exe = firefoxExecutableFor(null, A, [99313], {
+      executable: () => nightly,
+      exists: (p) => p === regular,
+      defaults: [regular],
+      lastUsed: none,
     });
-    assert.equal(exe, "/home/Applications/Firefox.app/Contents/MacOS/firefox");
+    assert.equal(exe, regular);
+  });
+
+  test("uses another running profile's Firefox when nothing else is found", () => {
+    const exe = firefoxExecutableFor(null, A, [99313], {
+      executable: () => nightly,
+      exists: () => false,
+      lastUsed: none,
+    });
+    assert.equal(exe, nightly);
   });
 
   test("returns null when Firefox can't be found", () => {
-    assert.equal(firefoxExecutableFor(null, [], { exists: () => false }), null);
+    assert.equal(firefoxExecutableFor(null, A, [], { exists: () => false, lastUsed: none }), null);
   });
 });
 

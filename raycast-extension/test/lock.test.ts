@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
@@ -44,6 +44,21 @@ describe("withLock", () => {
       /install failed/
     );
     assert.equal(existsSync(lock), false);
+  });
+
+  test("creates the folder it lives in, which doesn't exist on a fresh machine", async () => {
+    const fresh = join(dir, "home", ".raycast-firefox", "update.lock");
+    const result = await withLock(fresh, async () => "installed");
+    assert.deepEqual(result, { ran: true, value: "installed" });
+    assert.equal(existsSync(fresh), false);
+  });
+
+  test("leaves nothing behind after taking over a stale lock", async () => {
+    mkdirSync(lock);
+    const old = (Date.now() - 10 * 60 * 1000) / 1000;
+    utimesSync(lock, old, old);
+    await withLock(lock, async () => undefined);
+    assert.deepEqual(readdirSync(dir), []);
   });
 
   test("takes over a lock left by a run that died", async () => {

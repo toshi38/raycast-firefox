@@ -24,7 +24,7 @@ const reduce = (state: TabState<T>, ...actions: TabAction<T>[]) =>
   actions.reduce((s, a) => tabReducer(s, a, changed), state);
 const keys = (state: TabState<T>) => visibleTabs(state).map(storeTabKey);
 
-const loaded = (tabs: T[]): TabAction<T> => ({ type: "loaded", tabs });
+const loaded = (tabs: T[], startedAt = Number.MAX_SAFE_INTEGER): TabAction<T> => ({ type: "loaded", tabs, startedAt });
 
 describe("full loads", () => {
   test("replace the tabs and clear an error", () => {
@@ -130,6 +130,32 @@ describe("closing a tab", () => {
       key: "500:1",
     });
     assert.deepEqual(keys(s), ["600:1"]);
+  });
+});
+
+describe("a full load racing a close", () => {
+  test("doesn't bring back a tab closed while the load was in flight", () => {
+    let s = reduce(initialTabState<T>(), loaded([tab(1), tab(2)]));
+    const loadStartedAt = s.version;
+    s = reduce(s, { type: "closeStarted", key: "500:1" }, { type: "closeSettled", key: "500:1", ok: true });
+    s = reduce(s, loaded([tab(1), tab(2)], loadStartedAt));
+    assert.deepEqual(keys(s), ["500:2"]);
+  });
+
+  test("shows a tab again if a later load still finds it (it wasn't really closed)", () => {
+    let s = reduce(initialTabState<T>(), loaded([tab(1), tab(2)]));
+    s = reduce(s, { type: "closeStarted", key: "500:1" }, { type: "closeSettled", key: "500:1", ok: true });
+    s = reduce(s, loaded([tab(2)], s.version));
+    s = reduce(s, loaded([tab(1), tab(2)], s.version));
+    assert.deepEqual(keys(s), ["500:1", "500:2"]);
+  });
+});
+
+describe("while the error view is shown", () => {
+  test("failed refreshes don't trigger reload after reload", () => {
+    let s = reduce(initialTabState<T>(), { type: "loadFailed", error: new Error("Firefox is not connected") });
+    for (let i = 0; i < MAX_FAILED_REFRESHES + 2; i++) s = reduce(s, { type: "refreshFailed", startedAt: s.version });
+    assert.equal(needsFullLoad(s), false);
   });
 });
 

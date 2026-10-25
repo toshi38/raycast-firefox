@@ -378,6 +378,7 @@ export default function SearchTabs() {
   // newest load's result is applied.
   const reload = useCallback(async () => {
     const seq = ++loadSeq.current;
+    const startedAt = stateRef.current.version;
     loading.current = true;
     setIsLoading(true);
     try {
@@ -391,7 +392,7 @@ export default function SearchTabs() {
       if (hosts.length === 0) throw new Error("port-file-missing");
       const fresh = await fetchWithRetry(fetchTabsFromAllHosts);
       if (seq !== loadSeq.current) return;
-      dispatch({ type: "loaded", tabs: fresh });
+      dispatch({ type: "loaded", tabs: fresh, startedAt });
       setClassifiedError(null);
     } catch (error) {
       if (seq !== loadSeq.current) return;
@@ -452,8 +453,12 @@ export default function SearchTabs() {
   const errorShown = state.error ? classifiedError : null;
   const hostSignature = [...new Set(tabs.map((t) => t.host.key))].sort().join(",");
   const [setup, setSetup] = useState<Awaited<ReturnType<typeof loadProfileStatuses>>>();
+  const setupSeq = useRef(0);
   const recheckSetup = useCallback(async () => {
+    const seq = ++setupSeq.current;
     const next = await loadProfileStatuses();
+    // Checks can overlap (timer, host changes, Retry): keep only the newest.
+    if (seq !== setupSeq.current) return;
     setSetup((previous) => (previous && sameSetup(previous, next) ? previous : next));
   }, []);
   const errorMode = errorShown?.mode;

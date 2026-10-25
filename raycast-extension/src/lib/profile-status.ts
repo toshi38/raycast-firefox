@@ -160,21 +160,62 @@ const DEFAULT_EXECUTABLES = [
 ];
 
 /**
- * The Firefox executable to start for a profile: the one the profile is
- * running from (so Developer Edition, Nightly and copies outside
- * /Applications work), else the one another running profile uses, else a
- * standard install. Null if there is none.
+ * The Firefox executable a profile last ran with, from the LastPlatformDir
+ * in its compatibility.ini (".../Firefox.app/Contents/Resources"), or null.
+ */
+export function lastFirefoxExecutable(
+  profilePath: string,
+  read: (file: string) => string = (file) => readFileSync(file, "utf-8")
+): string | null {
+  let text: string;
+  try {
+    text = read(join(profilePath, "compatibility.ini"));
+  } catch {
+    return null;
+  }
+  const dir = text.match(/^LastPlatformDir=(.+)$/m)?.[1]?.trim();
+  return dir && /\.app\/Contents\/Resources$/.test(dir) ? join(dirname(dir), "MacOS", "firefox") : null;
+}
+
+/**
+ * The Firefox executable to start for a profile, so Developer Edition,
+ * Nightly and copies outside /Applications work, and a profile isn't opened
+ * (and so upgraded) by a different Firefox:
+ * 1. the one the profile is running from;
+ * 2. the one it last ran with (compatibility.ini);
+ * 3. a standard install;
+ * 4. the one another running profile uses.
+ * Null if there is none.
  */
 export function firefoxExecutableFor(
   firefoxPid: number | null,
+  profilePath: string,
   otherFirefoxPids: number[],
-  { executable = executableOf, exists = existsSync, defaults = DEFAULT_EXECUTABLES } = {}
+  {
+    executable = executableOf,
+    exists = existsSync,
+    defaults = DEFAULT_EXECUTABLES,
+    lastUsed = lastFirefoxExecutable,
+  }: {
+    executable?: (pid: number) => string;
+    exists?: (path: string) => boolean;
+    defaults?: string[];
+    lastUsed?: (profilePath: string) => string | null;
+  } = {}
 ): string | null {
-  for (const pid of firefoxPid !== null ? [firefoxPid, ...otherFirefoxPids] : otherFirefoxPids) {
+  if (firefoxPid !== null) {
+    const own = executable(firefoxPid);
+    if (isFirefoxExecutable(own)) return own;
+  }
+  const last = lastUsed(profilePath);
+  if (last && exists(last)) return last;
+  const standard = defaults.find((path) => exists(path));
+  if (standard) return standard;
+  for (const pid of otherFirefoxPids) {
     const path = executable(pid);
     if (isFirefoxExecutable(path)) return path;
   }
-  return defaults.find((path) => exists(path)) ?? null;
+  return null;
 }
 
 /**
