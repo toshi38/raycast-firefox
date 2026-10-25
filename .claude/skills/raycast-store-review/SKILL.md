@@ -44,6 +44,8 @@ The script only checks mechanical rules. Read the full diff against the Store co
 
 Make every fix in this repository on a branch with a PR into `main`, never in the Store fork. Run the script again until it shows no failures and no unexplained warnings. Then publish from `main` with `npx @raycast/api@latest publish`, following AGENTS.md (the publish tag, and stripping the token from the fork's remotes afterwards).
 
+After publishing, check the new Store PR's file list (`gh pr view <n> -R raycast/extensions --json files`). It should hold only this release's changes, the same files the script reported. `ray publish` reuses the fork branch `ext/firefox-tabs` from the previous Store PR. Raycast squash-merges, so that branch still carries the previous release's commits and its merge base predates them, and the new PR then shows the previous release again. Fix it without force-pushing: merge `raycast/extensions` `main` into `ext/firefox-tabs`, resolve every conflict inside `extensions/firefox-tabs` with the just-published content, check that the folder is identical to what `ray publish` pushed and that nothing outside it differs from `main`, then push. Fast-forward the same branch in `~/.config/raycast/public-extensions-fork` so the next `ray publish` builds on it. Then fill in the Store PR description, which `ray publish` leaves as the empty template.
+
 ## 4. When the Store PR gets review comments
 
 1. Fix each comment in this repository through a PR into `main`, with tests where it changes behaviour.
