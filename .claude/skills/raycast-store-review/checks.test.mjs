@@ -118,7 +118,7 @@ describe("checkPackageJson", () => {
     categories: ["Applications", "Productivity"],
     commands: [
       { name: "search-tabs", title: "Search Firefox Tabs", subtitle: "Firefox", description: "Search tabs" },
-      { name: "setup-bridge", title: "Set up Firefox Bridge", subtitle: "Firefox", description: "Set up" },
+      { name: "setup-bridge", title: "Set Up Firefox Bridge", subtitle: "Firefox", description: "Set up" },
     ],
   };
 
@@ -136,7 +136,13 @@ describe("checkPackageJson", () => {
 
   test("warns about 'Setup' used as a verb in a command title", () => {
     const pkg = { ...base, commands: [base.commands[0], { ...base.commands[1], title: "Setup Firefox Bridge" }] };
-    assert.match(messages(checkPackageJson(pkg, base)), /"Set up"/);
+    assert.match(messages(checkPackageJson(pkg, base)), /"Set Up"/);
+  });
+
+  test("warns about lowercase 'Set up' in a package.json title (raycast/extensions#32748)", () => {
+    const pkg = { ...base, commands: [base.commands[0], { ...base.commands[1], title: "Set up Firefox Bridge" }] };
+    assert.deepEqual(levels(checkPackageJson(pkg, base)), ["warn:package"]);
+    assert.match(messages(checkPackageJson(pkg, base)), /Apple Title Case, "Set Up"/);
   });
 
   test("warns when several commands have no subtitle", () => {
