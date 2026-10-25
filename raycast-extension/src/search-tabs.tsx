@@ -14,13 +14,16 @@ import {
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
 import { execFile } from "child_process";
-import { watch } from "fs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type ClassifiedError, FailureMode, classifyError, fetchWithRetry, showActionError } from "./lib/errors";
 import { AMO_URL } from "./lib/constants";
 import { faviconPath } from "./lib/favicon-cache";
-import { CONFIG_DIR, type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "./lib/hosts";
-import { type ProfileLabel, labelHosts, loadProfiles } from "./lib/profiles";
+import { type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "./lib/hosts";
+import { profilesNeedingSetup } from "./lib/profile-status";
+import { ProfileSetupItem, SetupAction, profileColor, profileIcon } from "./lib/profile-ui";
+import { type ProfileLabel, labelHosts } from "./lib/profiles";
+import { loadProfileStatuses } from "./lib/setup-status";
+import { useHostsWatcher } from "./lib/use-hosts-watcher";
 
 // -- Types matching the native host HTTP API response --
 
@@ -198,19 +201,6 @@ const CONTAINER_COLORS: Record<string, Color> = {
 };
 
 /**
- * One colour per Firefox profile, indexed by ProfileLabel.colorIndex (see
- * PROFILE_COLOR_COUNT). Green is left out because the Active tag uses it.
- */
-const PROFILE_COLORS: Color[] = [Color.Blue, Color.Orange, Color.Purple, Color.Magenta, Color.Yellow, Color.Red];
-
-function profileIcon(profile: ProfileLabel, color: Color): Image.ImageLike {
-  if ("path" in profile.icon) {
-    return { source: profile.icon.path, mask: Image.Mask.Circle };
-  }
-  return { source: Icon[profile.icon.name as keyof typeof Icon] ?? Icon.PersonCircle, tintColor: color };
-}
-
-/**
  * Build the accessories array for a List.Item.
  * Order: Pin icon, Active tag, Container tag, Window tag.
  *
@@ -235,10 +225,10 @@ function buildAccessories(tab: Tab, windowNumber: number, profile: ProfileLabel 
     });
   }
   if (profile) {
-    const color = PROFILE_COLORS[profile.colorIndex % PROFILE_COLORS.length];
+    const color = profileColor(profile);
     accessories.push({
       tag: { value: "W" + windowNumber, color },
-      icon: profileIcon(profile, color),
+      icon: profileIcon(profile),
       tooltip: `${profile.name}, window ${windowNumber}`,
     });
   } else {
@@ -381,30 +371,18 @@ export default function SearchTabs() {
       onData: handleData,
     }
   );
-  // Watch ~/.raycast-firefox for host records. Each native host writes
-  // hosts/<firefoxPid>.json (and the shared port file) once it is listening
-  // and removes them when its Firefox profile disconnects, so a profile
-  // starting or quitting refreshes the list straight away.
-  useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
-    try {
-      const watcher = watch(CONFIG_DIR, { recursive: true }, (_event, filename) => {
-        if (filename === "port" || filename?.startsWith("hosts")) {
-          // Coalesce the burst of events from one atomic write.
-          clearTimeout(timer);
-          timer = setTimeout(revalidate, 500);
-        }
-      });
-      return () => {
-        clearTimeout(timer);
-        watcher.close();
-      };
-    } catch {
-      // Directory doesn't exist yet — user needs manual setup
-    }
-  }, [revalidate]);
+  useHostsWatcher(revalidate);
 
-  const { data: profiles = [] } = usePromise(loadProfiles, []);
+  // Re-check every profile's setup whenever the set of connected hosts or
+  // the error changes, e.g. after the extension is installed in a profile.
+  const hostSignature = [...new Set(tabs.map((t) => t.host.key))].sort().join(",");
+  const { data: setup, revalidate: recheckSetup } = usePromise(loadProfileStatuses, []);
+  const errorMode = classifiedError?.mode;
+  useEffect(() => {
+    recheckSetup();
+  }, [hostSignature, errorMode]);
+  const profiles = setup?.profiles ?? [];
+  const needsSetup = profilesNeedingSetup(setup?.statuses ?? []);
   const [profileFilter, setProfileFilter] = useState("all");
 
   // Label each connected profile. With a single profile there is nothing to
@@ -497,12 +475,7 @@ export default function SearchTabs() {
           <List.Dropdown tooltip="Firefox Profile" value={activeFilter} onChange={setProfileFilter}>
             <List.Dropdown.Item title="All Profiles" value="all" icon={Icon.Globe} />
             {[...profileLabels].map(([key, label]) => (
-              <List.Dropdown.Item
-                key={key}
-                title={label.name}
-                value={key}
-                icon={profileIcon(label, PROFILE_COLORS[label.colorIndex % PROFILE_COLORS.length])}
-              />
+              <List.Dropdown.Item key={key} title={label.name} value={key} icon={profileIcon(label)} />
             ))}
           </List.Dropdown>
         ) : undefined
@@ -550,6 +523,28 @@ export default function SearchTabs() {
           ) : undefined
         }
       />
+      {activeFilter === "all" && needsSetup.length > 0 && (
+        <List.Section title="Needs Setup">
+          {needsSetup.map((status) => (
+            <ProfileSetupItem
+              key={status.profile.path}
+              status={status}
+              profiles={profiles}
+              actions={
+                <ActionPanel>
+                  <SetupAction status={status} />
+                  <Action
+                    title="Retry"
+                    icon={Icon.ArrowClockwise}
+                    shortcut={{ modifiers: ["cmd"], key: "r" }}
+                    onAction={revalidate}
+                  />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      )}
       {sortedTabs.map((tab) => {
         const profile = profileLabels.get(tab.host.key) ?? null;
         return (

@@ -24,8 +24,8 @@
     {
       "name": "setup-bridge",
       "title": "Setup Firefox Bridge",
-      "description": "Register the native messaging host with Firefox",
-      "mode": "no-view"
+      "description": "Install the native host and check the companion extension in each Firefox profile",
+      "mode": "view"
     }
   ],
   "dependencies": {
