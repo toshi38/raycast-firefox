@@ -3,7 +3,7 @@
 ## [Automatic Native Host Updates] - {PR_MERGE_DATE}
 
 - Install a pinned native host release and check it against hashes shipped with the extension
-- Update an older native host automatically when Search Firefox Tabs or Setup Firefox Bridge opens, then reconnect each Firefox profile to it
+- Update an older native host automatically when Search Firefox Tabs or Set up Firefox Bridge opens, then reconnect each Firefox profile to it
 
 ## [Profile Setup] - {PR_MERGE_DATE}
 
