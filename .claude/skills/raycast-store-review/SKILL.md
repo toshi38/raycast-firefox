@@ -40,6 +40,22 @@ The script only checks mechanical rules. Read the full diff against the Store co
 - **Screenshots.** If a change alters what the main views look like, the `metadata/` screenshots (2000x1250 PNG, at most 6, no other apps or personal data) still show the extension accurately.
 - **Commit messages and the Store PR description.** The PR template asks for a description, a screencast for visible changes, and its checklist. Bots flag PRs that read as entirely AI-generated, so write plainly and specifically.
 
+## 2b. Review the logic
+
+The script and the checklist above catch Store rules, not bugs. Greptile also reviews the logic of every Store PR, and it has found real bugs each round: a failed update that could never be retried, setup that stopped repairing a broken link, a stalled profile holding up every tab, a background refresh that brought closed tabs back or left tabs on screen after Firefox quit. Before every publish, review the logic yourself:
+
+1. Take the diff Greptile will see. For a new Store PR that is everything since the commit matching the Store copy (`git diff <store-matching commit> HEAD -- raycast-extension`). For a review round it is everything since the last publish (`git diff __raycast_latest_publish_ext/firefox-tabs__ HEAD -- raycast-extension`), plus how the new code interacts with what's already there.
+2. Have it reviewed by reviewers who start fresh: the `code-review` skill, or subagents briefed with the code and the facts below, not your own conclusions. Split a large diff by area (the tab list and its state; installing, updating and setup).
+3. Give the reviewers the runtime facts they can't see in the diff:
+   - Raycast keeps a command mounted between uses and shows the old view again with no event.
+   - Raycast re-serializes the whole List on every render.
+   - `usePromise` keeps its previous data when a run fails.
+   - Each Firefox profile runs its own native host, registered in `~/.raycast-firefox/hosts/`, and tab and window IDs are only unique within a profile.
+   - Raycast moves its bundled Node.js between versions.
+   - Both commands can be open at once.
+4. Ask for concrete failures, each with the sequence of events that triggers it: races between loads, refreshes, watchers and actions; steps that fail partway and are never repaired or retried; timers and requests left running; error states that never show or never clear.
+5. Fix every finding that holds up, with a test that fails without the fix, and review the fixes the same way before publishing.
+
 ## 3. Fix in this repository, then publish
 
 Make every fix in this repository on a branch with a PR into `main`, never in the Store fork. Run the script again until it shows no failures and no unexplained warnings. Then publish from `main` with `npx @raycast/api@latest publish`, following AGENTS.md (the publish tag, and stripping the token from the fork's remotes afterwards).
