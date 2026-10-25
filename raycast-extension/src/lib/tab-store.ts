@@ -76,8 +76,12 @@ export function tabReducer<T extends StoreTab>(
     case "refreshed": {
       if (action.startedAt !== state.version) return state;
       const tabsChanged = changed(state.tabs, action.tabs);
-      if (!tabsChanged && state.error === null && state.failedRefreshes === 0) return state;
-      return { ...state, tabs: tabsChanged ? action.tabs : state.tabs, error: null, failedRefreshes: 0 };
+      // An accepted refresh started after every recorded close settled, and
+      // no full load runs alongside it, so the record can be pruned.
+      if (!tabsChanged && state.error === null && state.failedRefreshes === 0 && state.closed.length === 0) {
+        return state;
+      }
+      return { ...state, tabs: tabsChanged ? action.tabs : state.tabs, error: null, failedRefreshes: 0, closed: [] };
     }
     case "refreshFailed":
       if (action.startedAt !== state.version) return state;

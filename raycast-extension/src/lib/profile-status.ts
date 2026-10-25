@@ -154,10 +154,10 @@ export function runningFirefoxPids(): number[] {
   }
 }
 
-const DEFAULT_EXECUTABLES = [
-  "/Applications/Firefox.app/Contents/MacOS/firefox",
-  join(homedir(), "Applications", "Firefox.app", "Contents", "MacOS", "firefox"),
-];
+const DEFAULT_EXECUTABLES = ["Firefox", "Firefox Developer Edition", "Firefox Nightly"].flatMap((name) => [
+  `/Applications/${name}.app/Contents/MacOS/firefox`,
+  join(homedir(), "Applications", `${name}.app`, "Contents", "MacOS", "firefox"),
+]);
 
 /**
  * The Firefox executable a profile last ran with, from the LastPlatformDir

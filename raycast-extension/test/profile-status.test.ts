@@ -282,6 +282,13 @@ describe("firefoxExecutableFor", () => {
   test("returns null when Firefox can't be found", () => {
     assert.equal(firefoxExecutableFor(null, A, [], { exists: () => false, lastUsed: none }), null);
   });
+
+  test("finds Developer Edition or Nightly when it is the only Firefox installed", () => {
+    const dev = "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox";
+    assert.equal(firefoxExecutableFor(null, A, [], { exists: (p) => p === dev, lastUsed: none }), dev);
+    const nightly = "/Applications/Firefox Nightly.app/Contents/MacOS/firefox";
+    assert.equal(firefoxExecutableFor(null, A, [], { exists: (p) => p === nightly, lastUsed: none }), nightly);
+  });
 });
 
 describe("openInProfile", () => {

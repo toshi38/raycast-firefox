@@ -151,6 +151,23 @@ describe("a full load racing a close", () => {
   });
 });
 
+describe("the record of closed tabs", () => {
+  test("is pruned by an accepted refresh, so it doesn't grow over a long session", () => {
+    let s = reduce(initialTabState<T>(), loaded([tab(1), tab(2), tab(3)]));
+    for (const id of [1, 2]) {
+      s = reduce(s, { type: "closeStarted", key: `500:${id}` }, { type: "closeSettled", key: `500:${id}`, ok: true });
+    }
+    assert.equal(s.closed.length, 2);
+    s = reduce(s, { type: "refreshed", tabs: [tab(3)], startedAt: s.version });
+    assert.deepEqual(s.closed, []);
+  });
+
+  test("an unchanged refresh with nothing to prune still returns the same state", () => {
+    const s = reduce(initialTabState<T>(), loaded([tab(1)]));
+    assert.equal(tabReducer(s, { type: "refreshed", tabs: [tab(1)], startedAt: s.version }, changed), s);
+  });
+});
+
 describe("while the error view is shown", () => {
   test("failed refreshes don't trigger reload after reload", () => {
     let s = reduce(initialTabState<T>(), { type: "loadFailed", error: new Error("Firefox is not connected") });

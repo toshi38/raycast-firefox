@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, test } from "node:test";
@@ -74,5 +74,41 @@ describe("withLock", () => {
     const result = await withLock(lock, async () => "should not run");
     assert.deepEqual(result, { ran: false });
     assert.equal(existsSync(lock), true, "leaves the other command's lock in place");
+  });
+});
+
+describe("withLock takeover race", () => {
+  test("steps aside if another command took over the stale lock first, and leaves its lock in place", async () => {
+    // A stale lock is found; before it is moved aside, another command
+    // replaces it with a fresh lock of its own.
+    mkdirSync(lock);
+    const old = (Date.now() - 10 * 60 * 1000) / 1000;
+    utimesSync(lock, old, old);
+    let swapped = false;
+    const stat = (path: string) => {
+      const result = statSync(path);
+      if (!swapped && path === lock) {
+        swapped = true;
+        rmSync(lock, { recursive: true });
+        mkdirSync(lock); // the other command's fresh lock
+      }
+      return result;
+    };
+    let ran = false;
+    const result = await withLock(
+      lock,
+      async () => {
+        ran = true;
+      },
+      { stat }
+    );
+    assert.deepEqual(result, { ran: false });
+    assert.equal(ran, false);
+    assert.equal(existsSync(lock), true, "the other command's lock is put back");
+    assert.deepEqual(
+      readdirSync(dir).filter((n) => n.includes(".stale-")),
+      [],
+      "nothing left aside"
+    );
   });
 });
