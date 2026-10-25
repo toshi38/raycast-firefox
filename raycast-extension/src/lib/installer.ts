@@ -1,20 +1,9 @@
-import {
-  chmodSync,
-  copyFileSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  mkdtempSync,
-  renameSync,
-  rmSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "fs";
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, renameSync, rmSync, unlinkSync, writeFileSync } from "fs";
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { environment } from "@raycast/api";
 import { type HostPin, verifyPinnedFile } from "./host-version";
+import { replaceSymlink } from "./node-symlink";
 import PINNED_HOST from "./native-host-pin.json";
 
 // -- Constants --
@@ -125,27 +114,7 @@ function atomicInstall(
  * system Node in dev). Always recreated to handle Raycast Node.js updates.
  */
 function createNodeSymlink(): void {
-  // Ensure parent directory exists
-  mkdirSync(join(homedir(), ".raycast-firefox"), { recursive: true });
-
-  // Remove existing symlink if present
-  if (existsSync(SYMLINK_PATH)) {
-    try {
-      const stat = lstatSync(SYMLINK_PATH);
-      if (stat.isSymbolicLink() || stat.isFile()) {
-        unlinkSync(SYMLINK_PATH);
-      }
-    } catch {
-      // If lstat fails, try removing anyway
-      try {
-        unlinkSync(SYMLINK_PATH);
-      } catch {
-        // Ignore — symlinkSync below will fail if there's a real problem
-      }
-    }
-  }
-
-  symlinkSync(process.execPath, SYMLINK_PATH);
+  replaceSymlink(process.execPath, SYMLINK_PATH);
 }
 
 // -- Public API --
