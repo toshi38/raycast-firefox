@@ -33,6 +33,9 @@ jobs:
       - name: Verify native host bundle
         run: test -f native-host/dist/host.bundle.js
 
+      - name: Test Raycast Store review checks
+        run: node --test .claude/skills/raycast-store-review/checks.test.mjs
+
       - name: Lint Firefox extension
         run: npm run lint --workspace=extension
 
