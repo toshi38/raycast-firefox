@@ -118,6 +118,24 @@ describe("fetchFromHosts", () => {
     );
   });
 
+  test("leaves out a host that doesn't answer in time instead of waiting for it", { timeout: 2000 }, async () => {
+    const started = Date.now();
+    const result = await fetchFromHosts(
+      [host("a"), host("b")],
+      (h) => (h.key === "a" ? new Promise<string[]>(() => {}) : Promise.resolve(["b1"])),
+      50
+    );
+    assert.deepEqual(result, ["b1"]);
+    assert.ok(Date.now() - started < 1000, "didn't wait for the stalled host");
+  });
+
+  test("rejects with a timeout when every host stalls", { timeout: 2000 }, async () => {
+    await assert.rejects(
+      fetchFromHosts([host("a")], () => new Promise<string[]>(() => {}), 20),
+      /didn't respond within 20ms/
+    );
+  });
+
   test("resolves empty for no hosts", async () => {
     assert.deepEqual(await fetchFromHosts([], async () => ["x"]), []);
   });

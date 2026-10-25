@@ -82,14 +82,30 @@ export function readHosts(configDir: string = CONFIG_DIR, isAlive: (pid: number)
   return [];
 }
 
+/** How long one host may take before it is left out of the results. */
+export const HOST_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, host: Host): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Firefox host on port ${host.port} didn't respond within ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 /**
  * Run `fetchOne` against every host and combine the results.
  *
- * A host that fails is left out so one broken profile doesn't hide the
- * others' tabs. Rejects with the first failure only when every host fails.
+ * A host that fails, or takes longer than `timeoutMs`, is left out so one
+ * broken or stalled profile doesn't hide or hold back the others' tabs.
+ * Rejects with the first failure only when every host fails.
  */
-export async function fetchFromHosts<T>(hosts: Host[], fetchOne: (host: Host) => Promise<T[]>): Promise<T[]> {
-  const results = await Promise.allSettled(hosts.map(fetchOne));
+export async function fetchFromHosts<T>(
+  hosts: Host[],
+  fetchOne: (host: Host) => Promise<T[]>,
+  timeoutMs: number = HOST_TIMEOUT_MS
+): Promise<T[]> {
+  const results = await Promise.allSettled(hosts.map((host) => withTimeout(fetchOne(host), timeoutMs, host)));
   const fulfilled = results.filter((r): r is PromiseFulfilledResult<T[]> => r.status === "fulfilled");
   if (fulfilled.length === 0 && results.length > 0) {
     throw (results[0] as PromiseRejectedResult).reason;

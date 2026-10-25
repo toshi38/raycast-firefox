@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type ClassifiedError, FailureMode, classifyError, fetchWithRetry, showActionError } from "./lib/errors";
 import { AMO_URL } from "./lib/constants";
 import { faviconPath } from "./lib/favicon-cache";
-import { type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "./lib/hosts";
+import { HOST_TIMEOUT_MS, type Host, fetchFromHosts, numberWindows, readHosts, tabKey, windowKey } from "./lib/hosts";
 import { profilesNeedingSetup } from "./lib/profile-status";
 import { ProfileSetupItem, SetupAction, openSetupCommand, profileColor, profileIcon } from "./lib/profile-ui";
 import { type ProfileLabel, labelHosts } from "./lib/profiles";
@@ -301,7 +301,9 @@ async function fetchAllTabs(host: Host): Promise<HostTab[]> {
   let pages = 0;
 
   while (hasMore && pages < maxPages) {
-    const res = await fetch(`http://127.0.0.1:${host.port}/tabs?offset=${allTabs.length}`);
+    const res = await fetch(`http://127.0.0.1:${host.port}/tabs?offset=${allTabs.length}`, {
+      signal: AbortSignal.timeout(HOST_TIMEOUT_MS),
+    });
     if (!res.ok) {
       const body = (await res.json().catch(() => ({ error: "Unknown error" }))) as { error?: string };
       throw new Error(body.error ?? `HTTP ${res.status}`);
@@ -383,6 +385,12 @@ export default function SearchTabs() {
   // the error changes, e.g. after the extension is installed in a profile.
   const hostSignature = [...new Set(tabs.map((t) => t.host.key))].sort().join(",");
   const { data: setup, revalidate: recheckSetup } = usePromise(loadProfileStatuses, []);
+  // Retry re-checks profiles as well: closing a profile that had no host
+  // doesn't change the tabs, so the tab-driven re-check wouldn't notice it.
+  const retry = () => {
+    revalidate();
+    recheckSetup();
+  };
   const errorMode = classifiedError?.mode;
   useEffect(() => {
     recheckSetup();
@@ -514,7 +522,7 @@ export default function SearchTabs() {
                 title="Retry"
                 icon={Icon.ArrowClockwise}
                 shortcut={{ modifiers: ["cmd"], key: "r" }}
-                onAction={revalidate}
+                onAction={retry}
               />
             </ActionPanel>
           ) : undefined
@@ -534,7 +542,7 @@ export default function SearchTabs() {
                     title="Retry"
                     icon={Icon.ArrowClockwise}
                     shortcut={{ modifiers: ["cmd"], key: "r" }}
-                    onAction={revalidate}
+                    onAction={retry}
                   />
                 </ActionPanel>
               }
