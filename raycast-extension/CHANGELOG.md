@@ -1,5 +1,9 @@
 # Firefox Tabs Changelog
 
+## [Fix Setup After Raycast Updates] - {PR_MERGE_DATE}
+
+- Fix installing or updating the native host failing with "file already exists" after Raycast moved its bundled Node.js
+
 ## [Automatic Native Host Updates] - {PR_MERGE_DATE}
 
 - Install a pinned native host release and check it against hashes shipped with the extension
