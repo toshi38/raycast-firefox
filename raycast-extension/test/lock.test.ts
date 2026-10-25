@@ -112,3 +112,41 @@ describe("withLock takeover race", () => {
     );
   });
 });
+
+describe("withLock heartbeat", () => {
+  test("keeps a long-running install's lock fresh, so another command doesn't take it over", async () => {
+    let otherRan = false;
+    await withLock(
+      lock,
+      async () => {
+        // Longer than staleMs: only the heartbeat keeps the lock fresh.
+        await new Promise((r) => setTimeout(r, 250));
+        const other = await withLock(
+          lock,
+          async () => {
+            otherRan = true;
+          },
+          { staleMs: 100 }
+        );
+        assert.deepEqual(other, { ran: false });
+      },
+      { staleMs: 100, heartbeatMs: 20 }
+    );
+    assert.equal(otherRan, false);
+  });
+
+  test("a lock left by an interrupted install is taken over once it stops being refreshed", async () => {
+    // Raycast closed the command mid-install: the lock was never released.
+    mkdirSync(lock);
+    const lastRefresh = (Date.now() - 20 * 1000) / 1000;
+    utimesSync(lock, lastRefresh, lastRefresh);
+    const result = await withLock(lock, async () => "retried");
+    assert.deepEqual(result, { ran: true, value: "retried" });
+  });
+
+  test("a lock refreshed moments ago is respected", async () => {
+    mkdirSync(lock);
+    const result = await withLock(lock, async () => "should not run");
+    assert.deepEqual(result, { ran: false });
+  });
+});
