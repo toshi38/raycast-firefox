@@ -5,7 +5,6 @@ const { URL } = require('url');
 const { logger } = require('./logger');
 const { activateFirefox } = require('./activate');
 const { sendRequest } = require('./bridge');
-const { writePortFile } = require('./lifecycle');
 const { handleHealth } = require('./health');
 const faviconCache = require('./favicon-cache');
 
@@ -67,7 +66,6 @@ function startServer(attempt) {
     srv.listen(port, '127.0.0.1', () => {
       server = srv;
       currentPort = port;
-      writePortFile(port);
       logger.info({ port }, 'HTTP server listening');
       resolve({ server: srv, port });
     });
