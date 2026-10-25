@@ -36,6 +36,9 @@ jobs:
       - name: Test native host
         run: npm test --workspace=native-host
 
+      - name: Test Raycast extension
+        run: npm test --workspace=raycast-extension
+
       - name: Test Raycast Store review checks
         run: node --test .claude/skills/raycast-store-review/checks.test.mjs
 

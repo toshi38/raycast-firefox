@@ -14,14 +14,13 @@ import {
 } from "@raycast/api";
 import { MutatePromise, getAvatarIcon, usePromise } from "@raycast/utils";
 import { execFile } from "child_process";
-import { existsSync, watch } from "fs";
-import { homedir } from "os";
-import { join } from "path";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { watch } from "fs";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type ClassifiedError, FailureMode, classifyError, fetchWithRetry, showActionError } from "./lib/errors";
 import { AMO_URL } from "./lib/constants";
 import { faviconPath } from "./lib/favicon-cache";
-import { getPort } from "./lib/setup";
+import { CONFIG_DIR, type Host, fetchFromHosts, readHosts } from "./lib/hosts";
+import { type ProfileLabel, labelProfile, loadProfiles } from "./lib/profiles";
 
 // -- Types matching the native host HTTP API response --
 
@@ -57,7 +56,19 @@ interface TabsResponse {
   meta: { count: number; timestamp: number };
 }
 
-const PORT_PATH = join(homedir(), ".raycast-firefox", "port");
+/** A tab together with the native host (and so the Firefox profile) it came from. */
+interface HostTab extends Tab {
+  host: Host;
+}
+
+/** Tab and window IDs are only unique within one Firefox profile. */
+function tabKey(tab: HostTab): string {
+  return `${tab.host.key}:${tab.id}`;
+}
+
+function windowKey(tab: HostTab): string {
+  return `${tab.host.key}:${tab.windowId}`;
+}
 
 // -- URL helpers --
 
@@ -196,18 +207,26 @@ const CONTAINER_COLORS: Record<string, Color> = {
 };
 
 /**
- * Get the 1-based window number for a windowId given a sorted list of all window IDs.
+ * One colour per Firefox profile, indexed by ProfileLabel.colorIndex (see
+ * PROFILE_COLOR_COUNT). Green is left out because the Active tag uses it.
  */
-function getWindowNumber(windowId: number, allWindowIds: number[]): number {
-  const idx = allWindowIds.indexOf(windowId);
-  return idx >= 0 ? idx + 1 : 1;
+const PROFILE_COLORS: Color[] = [Color.Blue, Color.Orange, Color.Purple, Color.Magenta, Color.Yellow, Color.Red];
+
+function profileIcon(profile: ProfileLabel, color: Color): Image.ImageLike {
+  if ("path" in profile.icon) {
+    return { source: profile.icon.path, mask: Image.Mask.Circle };
+  }
+  return { source: Icon[profile.icon.name as keyof typeof Icon] ?? Icon.PersonCircle, tintColor: color };
 }
 
 /**
  * Build the accessories array for a List.Item.
  * Order: Pin icon, Active tag, Container tag, Window tag.
+ *
+ * With more than one profile connected, the window tag shows the profile's
+ * avatar and is coloured per profile.
  */
-function buildAccessories(tab: Tab, windowNumber: number): List.Item.Accessory[] {
+function buildAccessories(tab: Tab, windowNumber: number, profile: ProfileLabel | null): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
 
   if (tab.pinned) {
@@ -224,22 +243,31 @@ function buildAccessories(tab: Tab, windowNumber: number): List.Item.Accessory[]
       },
     });
   }
-  accessories.push({
-    tag: { value: "W" + windowNumber, color: Color.SecondaryText },
-  });
+  if (profile) {
+    const color = PROFILE_COLORS[profile.colorIndex % PROFILE_COLORS.length];
+    accessories.push({
+      tag: { value: "W" + windowNumber, color },
+      icon: profileIcon(profile, color),
+      tooltip: `${profile.name}, window ${windowNumber}`,
+    });
+  } else {
+    accessories.push({
+      tag: { value: "W" + windowNumber, color: Color.SecondaryText },
+    });
+  }
 
   return accessories;
 }
 
 // -- Tab switching --
 
-async function switchTab(tabId: number, windowId: number) {
+async function switchTab(tab: HostTab) {
   await closeMainWindow({ clearRootSearch: true });
   try {
-    const response = await fetch(`http://127.0.0.1:${getPort()}/switch`, {
+    const response = await fetch(`http://127.0.0.1:${tab.host.port}/switch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tabId, windowId }),
+      body: JSON.stringify({ tabId: tab.id, windowId: tab.windowId }),
     });
     if (!response.ok) {
       const body = (await response.json().catch(() => ({ error: "Unknown error" }))) as { error?: string };
@@ -252,7 +280,7 @@ async function switchTab(tabId: number, windowId: number) {
 
 // -- Tab closing --
 
-async function closeTab(tabId: number, mutate: MutatePromise<Tab[], undefined>) {
+async function closeTab(tab: HostTab, mutate: MutatePromise<HostTab[], undefined>) {
   const toast = await showToast({
     style: Toast.Style.Animated,
     title: "Closing tab...",
@@ -260,10 +288,10 @@ async function closeTab(tabId: number, mutate: MutatePromise<Tab[], undefined>) 
   try {
     await mutate(
       (async () => {
-        const res = await fetch(`http://127.0.0.1:${getPort()}/close`, {
+        const res = await fetch(`http://127.0.0.1:${tab.host.port}/close`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tabId }),
+          body: JSON.stringify({ tabId: tab.id }),
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({ error: "Unknown error" }))) as { error?: string };
@@ -272,7 +300,7 @@ async function closeTab(tabId: number, mutate: MutatePromise<Tab[], undefined>) 
       })(),
       {
         optimisticUpdate(data) {
-          return (data ?? []).filter((t) => t.id !== tabId);
+          return (data ?? []).filter((t) => tabKey(t) !== tabKey(tab));
         },
       }
     );
@@ -286,14 +314,14 @@ async function closeTab(tabId: number, mutate: MutatePromise<Tab[], undefined>) 
 
 // -- Fetch all tabs (handles pagination) --
 
-async function fetchAllTabs(): Promise<Tab[]> {
-  const allTabs: Tab[] = [];
+async function fetchAllTabs(host: Host): Promise<HostTab[]> {
+  const allTabs: HostTab[] = [];
   let hasMore = true;
   const maxPages = 20;
   let pages = 0;
 
   while (hasMore && pages < maxPages) {
-    const res = await fetch(`http://127.0.0.1:${getPort()}/tabs?offset=${allTabs.length}`);
+    const res = await fetch(`http://127.0.0.1:${host.port}/tabs?offset=${allTabs.length}`);
     if (!res.ok) {
       const body = (await res.json().catch(() => ({ error: "Unknown error" }))) as { error?: string };
       throw new Error(body.error ?? `HTTP ${res.status}`);
@@ -301,12 +329,24 @@ async function fetchAllTabs(): Promise<Tab[]> {
     const json = (await res.json()) as TabsResponse;
     const batch = json.data?.tabs ?? [];
     if (batch.length === 0) break;
-    allTabs.push(...batch);
+    allTabs.push(...batch.map((tab) => ({ ...tab, host })));
     hasMore = json.data?.hasMore ?? false;
     pages++;
   }
 
   return allTabs;
+}
+
+/**
+ * Fetch tabs from every running Firefox profile. Hosts are re-read on each
+ * call so retries pick up a host that has just started.
+ */
+async function fetchTabsFromAllHosts(): Promise<HostTab[]> {
+  const hosts = readHosts();
+  // Distinct error so classifyError skips pgrep (avoids a race during
+  // Firefox shutdown where the process lingers briefly).
+  if (hosts.length === 0) throw new Error("port-file-missing");
+  return fetchFromHosts(hosts, fetchAllTabs);
 }
 
 // -- Error empty view --
@@ -338,13 +378,11 @@ export default function SearchTabs() {
     mutate,
   } = usePromise(
     () => {
-      // Fast-fail: if port file is gone, no host is listening — skip retries.
-      // Use a distinct error message so classifyError skips pgrep (avoids
-      // race condition during Firefox shutdown where process lingers briefly).
-      if (!existsSync(PORT_PATH)) {
+      // Fast-fail: if no host is registered, none is listening, so skip retries.
+      if (readHosts().length === 0) {
         return Promise.reject(new Error("port-file-missing"));
       }
-      return fetchWithRetry(fetchAllTabs);
+      return fetchWithRetry(fetchTabsFromAllHosts);
     },
     [],
     {
@@ -352,30 +390,50 @@ export default function SearchTabs() {
       onData: handleData,
     }
   );
-  // Watch ~/.raycast-firefox/port for changes. The native host writes this
-  // file on startup and removes it when Firefox disconnects (stdin EOF).
-  // This gives instant push-based detection of both transitions:
-  //   host starts  → port file created  → revalidate → tabs load
-  //   Firefox quits → port file removed → revalidate → error shown
+  // Watch ~/.raycast-firefox for host records. Each native host writes
+  // hosts/<firefoxPid>.json (and the shared port file) once it is listening
+  // and removes them when its Firefox profile disconnects, so a profile
+  // starting or quitting refreshes the list straight away.
   useEffect(() => {
-    const dir = join(homedir(), ".raycast-firefox");
+    let timer: NodeJS.Timeout | undefined;
     try {
-      const watcher = watch(dir, (_event, filename) => {
-        if (filename === "port") {
-          if (existsSync(PORT_PATH)) {
-            // Port file created — host just started
-            setTimeout(revalidate, 500);
-          } else {
-            // Port file removed — Firefox disconnected
-            setTimeout(revalidate, 500);
-          }
+      const watcher = watch(CONFIG_DIR, { recursive: true }, (_event, filename) => {
+        if (filename === "port" || filename?.startsWith("hosts")) {
+          // Coalesce the burst of events from one atomic write.
+          clearTimeout(timer);
+          timer = setTimeout(revalidate, 500);
         }
       });
-      return () => watcher.close();
+      return () => {
+        clearTimeout(timer);
+        watcher.close();
+      };
     } catch {
       // Directory doesn't exist yet — user needs manual setup
     }
   }, [revalidate]);
+
+  const { data: profiles = [] } = usePromise(loadProfiles, []);
+  const [profileFilter, setProfileFilter] = useState("all");
+
+  // Label each connected profile. With a single profile there is nothing to
+  // tell apart, so tabs keep the plain window tag.
+  const profileLabels = useMemo(() => {
+    const hosts = new Map(tabs.map((t) => [t.host.key, t.host]));
+    const labels = new Map<string, ProfileLabel>();
+    if (hosts.size < 2) return labels;
+    for (const host of hosts.values()) {
+      labels.set(
+        host.key,
+        labelProfile(host.profilePath, profiles) ?? {
+          name: `Firefox (process ${host.firefoxPid ?? host.port})`,
+          icon: { name: "PersonCircle" },
+          colorIndex: labels.size,
+        }
+      );
+    }
+    return labels;
+  }, [tabs, profiles]);
 
   const [favicons, setFavicons] = useState<Record<string, string>>({});
   const fetchedRef = useRef<Set<string>>(new Set());
@@ -413,7 +471,7 @@ export default function SearchTabs() {
 
     urlsToFetch.forEach(async (url) => {
       try {
-        const res = await fetch(`http://127.0.0.1:${getPort()}/favicon?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`http://127.0.0.1:${tabs[0].host.port}/favicon?url=${encodeURIComponent(url)}`);
         if (res.ok) {
           const json = (await res.json()) as {
             ok: boolean;
@@ -435,13 +493,41 @@ export default function SearchTabs() {
   }, [tabs]);
 
   // Sort tabs by most recently accessed first
-  const sortedTabs = [...tabs].sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0));
+  // A filtered profile that has since quit falls back to showing every profile.
+  const activeFilter = profileLabels.has(profileFilter) ? profileFilter : "all";
+  const visibleTabs = activeFilter === "all" ? tabs : tabs.filter((t) => t.host.key === activeFilter);
+  const sortedTabs = [...visibleTabs].sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0));
 
-  // Compute unique sorted window IDs for window number assignment
-  const windowIds = [...new Set(sortedTabs.map((t) => t.windowId))].sort((a, b) => a - b);
+  // Number windows across all profiles, grouped by profile, so each W<n> is
+  // unique and a profile's windows sit together.
+  const windowNumbers = useMemo(() => {
+    const profileOrder = (t: HostTab) => profileLabels.get(t.host.key)?.colorIndex ?? 0;
+    const windows = [...new Map(tabs.map((t) => [windowKey(t), t])).values()].sort(
+      (a, b) => profileOrder(a) - profileOrder(b) || a.host.key.localeCompare(b.host.key) || a.windowId - b.windowId
+    );
+    return new Map(windows.map((t, i) => [windowKey(t), i + 1]));
+  }, [tabs, profileLabels]);
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search Firefox tabs...">
+    <List
+      isLoading={isLoading}
+      searchBarPlaceholder="Search Firefox tabs..."
+      searchBarAccessory={
+        profileLabels.size > 1 ? (
+          <List.Dropdown tooltip="Firefox Profile" value={activeFilter} onChange={setProfileFilter}>
+            <List.Dropdown.Item title="All Profiles" value="all" icon={Icon.Globe} />
+            {[...profileLabels].map(([key, label]) => (
+              <List.Dropdown.Item
+                key={key}
+                title={label.name}
+                value={key}
+                icon={profileIcon(label, PROFILE_COLORS[label.colorIndex % PROFILE_COLORS.length])}
+              />
+            ))}
+          </List.Dropdown>
+        ) : undefined
+      }
+    >
       <List.EmptyView
         icon={classifiedError ? ERROR_ICONS[classifiedError.mode] : Icon.MagnifyingGlass}
         title={classifiedError ? classifiedError.title : "No Results"}
@@ -484,32 +570,35 @@ export default function SearchTabs() {
           ) : undefined
         }
       />
-      {sortedTabs.map((tab) => (
-        <List.Item
-          key={String(tab.id)}
-          icon={getTabIcon(tab, favicons)}
-          title={tab.title || "Untitled"}
-          subtitle={cleanUrl(tab.url)}
-          keywords={urlKeywords(tab.url)}
-          accessories={buildAccessories(tab, getWindowNumber(tab.windowId, windowIds))}
-          actions={
-            <ActionPanel>
-              <ActionPanel.Section>
-                <Action title="Switch to Tab" icon={Icon.Globe} onAction={() => switchTab(tab.id, tab.windowId)} />
-              </ActionPanel.Section>
-              <ActionPanel.Section>
-                <Action
-                  title="Close Tab"
-                  icon={Icon.Trash}
-                  style={Action.Style.Destructive}
-                  shortcut={Keyboard.Shortcut.Common.Remove}
-                  onAction={() => closeTab(tab.id, mutate)}
-                />
-              </ActionPanel.Section>
-            </ActionPanel>
-          }
-        />
-      ))}
+      {sortedTabs.map((tab) => {
+        const profile = profileLabels.get(tab.host.key) ?? null;
+        return (
+          <List.Item
+            key={tabKey(tab)}
+            icon={getTabIcon(tab, favicons)}
+            title={tab.title || "Untitled"}
+            subtitle={cleanUrl(tab.url)}
+            keywords={profile ? [...urlKeywords(tab.url), ...profile.name.split(/\s+/)] : urlKeywords(tab.url)}
+            accessories={buildAccessories(tab, windowNumbers.get(windowKey(tab)) ?? 1, profile)}
+            actions={
+              <ActionPanel>
+                <ActionPanel.Section>
+                  <Action title="Switch to Tab" icon={Icon.Globe} onAction={() => switchTab(tab)} />
+                </ActionPanel.Section>
+                <ActionPanel.Section>
+                  <Action
+                    title="Close Tab"
+                    icon={Icon.Trash}
+                    style={Action.Style.Destructive}
+                    shortcut={Keyboard.Shortcut.Common.Remove}
+                    onAction={() => closeTab(tab, mutate)}
+                  />
+                </ActionPanel.Section>
+              </ActionPanel>
+            }
+          />
+        );
+      })}
     </List>
   );
 }

@@ -1,5 +1,11 @@
 # firefox-tabs Changelog
 
+## [Multiple Firefox Profiles] - {PR_MERGE_DATE}
+
+- Show tabs from every running Firefox profile, not just one
+- Switch to and close tabs in the profile they belong to
+- Show each profile's avatar and colour on its window tags, and filter tabs by profile from the search bar
+
 ## [Fix Typing Lag With Many Tabs] - 2026-10-24
 
 - Cache favicons as files so searching stays responsive with hundreds of open tabs
